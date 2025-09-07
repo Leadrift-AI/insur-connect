@@ -61,8 +61,33 @@ export const useCalendarSync = () => {
     }
   }, [user, toast]);
 
+  const deleteCalendarEvent = useCallback(async (calendarEventId: string) => {
+    if (!user) {
+      console.warn('No user authenticated for calendar sync');
+      return;
+    }
+
+    try {
+      await calendarService.deleteCalendarEvent(calendarEventId);
+      
+      toast({
+        title: "Calendar Updated",
+        description: "Event has been removed from your calendar",
+      });
+    } catch (error) {
+      console.error('Calendar event deletion failed:', error);
+      
+      toast({
+        title: "Delete Failed",
+        description: "Could not remove event from calendar",
+        variant: "destructive",
+      });
+    }
+  }, [user, toast]);
+
   return {
     syncAppointment,
     syncAllAppointments,
+    deleteCalendarEvent,
   };
 };

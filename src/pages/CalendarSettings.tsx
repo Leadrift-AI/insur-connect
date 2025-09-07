@@ -1,6 +1,7 @@
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import CalendarSettings from '@/components/calendar/CalendarSettings';
+import CalendarIntegrationTest from '@/components/calendar/CalendarIntegrationTest';
 
 const CalendarSettingsPage: React.FC = () => {
   return (
@@ -13,7 +14,10 @@ const CalendarSettingsPage: React.FC = () => {
           </p>
         </div>
         
-        <CalendarSettings />
+        <div className="grid gap-6 md:grid-cols-1 lg:grid-cols-2">
+          <CalendarSettings />
+          <CalendarIntegrationTest />
+        </div>
       </div>
     </DashboardLayout>
   );

@@ -107,6 +107,89 @@ class CalendarService {
     }
   }
 
+  async deleteCalendarEvent(calendarEventId: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    // Get the user's active calendar integration
+    const { data: integration, error: integrationError } = await supabase
+      .from('calendar_integrations')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (integrationError || !integration) {
+      console.log('No active calendar integration found for event deletion');
+      return;
+    }
+
+    await this.deleteEvent(integration, calendarEventId);
+  }
+
+  async updateCalendarEvent(appointmentId: string): Promise<void> {
+    const { data: { session } } = await supabase.auth.getSession();
+    
+    if (!session?.user?.id) {
+      throw new Error('User not authenticated');
+    }
+
+    const { data: appointment, error: appointmentError } = await supabase
+      .from('appointments')
+      .select(`
+        *,
+        leads (
+          full_name,
+          email,
+          phone
+        )
+      `)
+      .eq('id', appointmentId)
+      .single();
+
+    if (appointmentError || !appointment || !appointment.calendar_event_id) {
+      throw new Error('Failed to fetch appointment details or no calendar event ID');
+    }
+
+    // Get the user's active calendar integration
+    const { data: integration, error: integrationError } = await supabase
+      .from('calendar_integrations')
+      .select('*')
+      .eq('user_id', session.user.id)
+      .eq('is_active', true)
+      .maybeSingle();
+
+    if (integrationError || !integration) {
+      console.log('No active calendar integration found for event update');
+      return;
+    }
+
+    const scheduledAt = new Date(appointment.scheduled_at);
+    const endTime = new Date(scheduledAt.getTime() + 60 * 60 * 1000); // 1 hour duration
+
+    const calendarEvent: CalendarEvent = {
+      summary: `Appointment with ${appointment.leads?.full_name || 'Client'}`,
+      description: appointment.notes || 'Insurance consultation appointment',
+      start: {
+        dateTime: scheduledAt.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      end: {
+        dateTime: endTime.toISOString(),
+        timeZone: Intl.DateTimeFormat().resolvedOptions().timeZone,
+      },
+      attendees: appointment.leads?.email ? [{
+        email: appointment.leads.email,
+        displayName: appointment.leads.full_name,
+      }] : undefined,
+    };
+
+    await this.updateEvent(integration, appointment.calendar_event_id, calendarEvent);
+  }
+
   async syncAppointmentToCalendar(appointmentId: string): Promise<void> {
     const { data: appointment, error: appointmentError } = await supabase
       .from('appointments')
@@ -169,14 +252,18 @@ class CalendarService {
     };
 
     try {
-      const calendarEventId = await this.createEvent(integration, calendarEvent);
-      
-      // Store the calendar event ID in the appointment
-      await supabase
-        .from('appointments')
-        .update({ calendar_event_id: calendarEventId })
-        .eq('id', appointmentId);
-
+      // If appointment already has a calendar event ID, update it; otherwise create new
+      if (appointment.calendar_event_id) {
+        await this.updateEvent(integration, appointment.calendar_event_id, calendarEvent);
+      } else {
+        const calendarEventId = await this.createEvent(integration, calendarEvent);
+        
+        // Store the calendar event ID in the appointment
+        await supabase
+          .from('appointments')
+          .update({ calendar_event_id: calendarEventId })
+          .eq('id', appointmentId);
+      }
     } catch (error) {
       console.error('Failed to sync appointment to calendar:', error);
       throw error;

@@ -18,6 +18,7 @@ interface Appointment {
   notes: string;
   created_at: string;
   updated_at: string;
+  calendar_event_id?: string;
   leads?: {
     full_name: string;
     email: string;

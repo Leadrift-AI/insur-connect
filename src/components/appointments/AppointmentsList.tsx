@@ -4,10 +4,12 @@ import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
-import { Calendar, Clock, User, Phone, Mail, Edit, Trash2, CheckCircle, XCircle } from 'lucide-react';
+import { Calendar, Clock, User, Phone, Mail, Edit, Trash2, CheckCircle, XCircle, RefreshCw, RotateCcw } from 'lucide-react';
 import { format } from 'date-fns';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCalendarSync } from '@/hooks/useCalendarSync';
+import EditAppointmentDialog from './EditAppointmentDialog';
 
 interface Appointment {
   id: string;
@@ -15,6 +17,7 @@ interface Appointment {
   scheduled_at: string;
   status: string;
   notes: string;
+  calendar_event_id?: string;
   leads?: {
     full_name: string;
     email: string;
@@ -46,7 +49,11 @@ const getStatusColor = (status: string) => {
 
 const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) => {
   const [statusFilter, setStatusFilter] = useState<string>('all');
+  const [syncing, setSyncing] = useState<Set<string>>(new Set());
+  const [editDialogOpen, setEditDialogOpen] = useState(false);
+  const [selectedAppointment, setSelectedAppointment] = useState<Appointment | null>(null);
   const { toast } = useToast();
+  const { syncAppointment, syncAllAppointments, deleteCalendarEvent } = useCalendarSync();
 
   const filteredAppointments = appointments.filter(apt => 
     statusFilter === 'all' || apt.status === statusFilter
@@ -71,6 +78,9 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
           title: "Success",
           description: "Appointment status updated successfully"
         });
+        
+        // Sync updated appointment to calendar
+        await syncAppointment(appointmentId);
         onRefresh();
       }
     } catch (error) {
@@ -89,6 +99,12 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
     }
 
     try {
+      // First delete from calendar if it exists
+      const appointment = appointments.find(apt => apt.id === appointmentId);
+      if (appointment?.calendar_event_id) {
+        await deleteCalendarEvent(appointment.calendar_event_id);
+      }
+
       const { error } = await supabase
         .from('appointments')
         .delete()
@@ -118,6 +134,34 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
     }
   };
 
+  const handleSyncAppointment = async (appointmentId: string) => {
+    setSyncing(prev => new Set(prev).add(appointmentId));
+    try {
+      await syncAppointment(appointmentId);
+    } finally {
+      setSyncing(prev => {
+        const newSet = new Set(prev);
+        newSet.delete(appointmentId);
+        return newSet;
+      });
+    }
+  };
+
+  const handleSyncAllAppointments = async () => {
+    const appointmentIds = filteredAppointments.map(apt => apt.id);
+    setSyncing(new Set(appointmentIds));
+    try {
+      await syncAllAppointments(appointmentIds);
+    } finally {
+      setSyncing(new Set());
+    }
+  };
+
+  const handleEditAppointment = (appointment: Appointment) => {
+    setSelectedAppointment(appointment);
+    setEditDialogOpen(true);
+  };
+
   return (
     <Card>
       <CardHeader>
@@ -129,6 +173,15 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
             </CardDescription>
           </div>
           <div className="flex items-center space-x-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={handleSyncAllAppointments}
+              disabled={syncing.size > 0 || filteredAppointments.length === 0}
+            >
+              <RefreshCw className={`h-4 w-4 mr-2 ${syncing.size > 0 ? 'animate-spin' : ''}`} />
+              Sync All to Calendar
+            </Button>
             <Select value={statusFilter} onValueChange={setStatusFilter}>
               <SelectTrigger className="w-40">
                 <SelectValue placeholder="Filter by status" />
@@ -167,6 +220,7 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
                   <TableHead>Status</TableHead>
                   <TableHead>Contact</TableHead>
                   <TableHead>Notes</TableHead>
+                  <TableHead>Calendar</TableHead>
                   <TableHead>Actions</TableHead>
                 </TableRow>
               </TableHeader>
@@ -225,6 +279,36 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
                     </TableCell>
                     <TableCell>
                       <div className="flex items-center space-x-2">
+                        {appointment.calendar_event_id ? (
+                          <Badge variant="outline" className="text-green-600 border-green-600">
+                            Synced
+                          </Badge>
+                        ) : (
+                          <Badge variant="outline" className="text-gray-500">
+                            Not synced
+                          </Badge>
+                        )}
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleSyncAppointment(appointment.id)}
+                          disabled={syncing.has(appointment.id)}
+                          title="Sync to calendar"
+                        >
+                          <RefreshCw className={`h-4 w-4 ${syncing.has(appointment.id) ? 'animate-spin' : ''}`} />
+                        </Button>
+                      </div>
+                    </TableCell>
+                    <TableCell>
+                      <div className="flex items-center space-x-2">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditAppointment(appointment)}
+                          title="Edit appointment"
+                        >
+                          <Edit className="h-4 w-4 text-blue-600" />
+                        </Button>
                         {appointment.status !== 'completed' && (
                           <Button
                             variant="ghost"
@@ -262,6 +346,16 @@ const AppointmentsList = ({ appointments, onRefresh }: AppointmentsListProps) =>
           </div>
         )}
       </CardContent>
+
+      <EditAppointmentDialog
+        open={editDialogOpen}
+        onOpenChange={setEditDialogOpen}
+        appointment={selectedAppointment}
+        onSuccess={() => {
+          setEditDialogOpen(false);
+          onRefresh();
+        }}
+      />
     </Card>
   );
 };
