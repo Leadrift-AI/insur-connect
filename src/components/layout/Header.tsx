@@ -1,9 +1,11 @@
 import { useState } from "react";
 import { Button } from "@/components/ui/button";
 import { Menu, X, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 
 const Header = () => {
   const [isMenuOpen, setIsMenuOpen] = useState(false);
+  const navigate = useNavigate();
 
   return (
     <header className="bg-white/95 backdrop-blur-sm border-b border-border sticky top-0 z-50 shadow-card">
@@ -36,10 +38,18 @@ const Header = () => {
 
         {/* CTA Buttons */}
         <div className="hidden md:flex items-center space-x-4">
-          <Button variant="ghost" className="font-montserrat">
+          <Button 
+            variant="ghost" 
+            className="font-montserrat"
+            onClick={() => navigate('/auth')}
+          >
             Sign In
           </Button>
-          <Button variant="hero" className="font-montserrat">
+          <Button 
+            variant="hero" 
+            className="font-montserrat"
+            onClick={() => navigate('/auth')}
+          >
             Start Free Trial
           </Button>
         </div>
@@ -73,10 +83,18 @@ const Header = () => {
               </a>
             </nav>
             <div className="flex flex-col space-y-2 pt-4 border-t border-border">
-              <Button variant="ghost" className="font-montserrat w-full">
+              <Button 
+                variant="ghost" 
+                className="font-montserrat w-full"
+                onClick={() => navigate('/auth')}
+              >
                 Sign In
               </Button>
-              <Button variant="hero" className="font-montserrat w-full">
+              <Button 
+                variant="hero" 
+                className="font-montserrat w-full"
+                onClick={() => navigate('/auth')}
+              >
                 Start Free Trial
               </Button>
             </div>

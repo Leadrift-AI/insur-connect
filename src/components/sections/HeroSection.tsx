@@ -1,8 +1,11 @@
 import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, TrendingUp, Users, Zap } from "lucide-react";
+import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-insurance.jpg";
 
 const HeroSection = () => {
+  const navigate = useNavigate();
+
   return (
     <section className="relative py-20 lg:py-32 overflow-hidden">
       {/* Background Pattern */}
@@ -56,7 +59,12 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button variant="hero" size="xl" className="group">
+              <Button 
+                variant="hero" 
+                size="xl" 
+                className="group"
+                onClick={() => navigate('/auth')}
+              >
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
