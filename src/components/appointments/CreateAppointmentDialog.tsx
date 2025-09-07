@@ -34,6 +34,7 @@ const CreateAppointmentDialog = ({ open, onOpenChange, onSuccess }: CreateAppoin
   const [selectedTime, setSelectedTime] = useState('');
   const { user } = useAuth();
   const { toast } = useToast();
+  const { syncAppointment } = useCalendarSync();
 
   useEffect(() => {
     if (open && user) {
