@@ -10,6 +10,7 @@ import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Appointments from "./pages/Appointments";
 import CalendarSettings from "./pages/CalendarSettings";
+import CalendarAuthCallback from "./components/calendar/CalendarAuthCallback";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -28,6 +29,7 @@ const App: React.FC = () => {
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/calendar-settings" element={<CalendarSettings />} />
+              <Route path="/auth/calendar/callback" element={<CalendarAuthCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>

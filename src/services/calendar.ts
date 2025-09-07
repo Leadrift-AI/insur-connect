@@ -35,12 +35,10 @@ class CalendarService {
   private readonly GOOGLE_CALENDAR_API_BASE = 'https://www.googleapis.com/calendar/v3';
 
   async initGoogleAuth(): Promise<string> {
-    const clientId = process.env.GOOGLE_CALENDAR_CLIENT_ID;
-    if (!clientId) {
-      throw new Error('Google Calendar Client ID not configured');
-    }
-
-    const redirectUri = `${window.location.origin}/auth/calendar/callback`;
+    // Get the client ID from environment (this should be a public key)
+    const clientId = 'your-google-client-id'; // This should be replaced with actual client ID
+    
+    const redirectUri = `https://qjfsxniavmgckkgaifmf.supabase.co/functions/v1/calendar-oauth`;
     const scope = 'https://www.googleapis.com/auth/calendar';
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
