@@ -9,6 +9,7 @@ import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
 import Appointments from "./pages/Appointments";
+import Campaigns from "./pages/Campaigns";
 import CalendarSettings from "./pages/CalendarSettings";
 import CalendarAuthCallback from "./components/calendar/CalendarAuthCallback";
 import NotFound from "./pages/NotFound";
@@ -28,6 +29,7 @@ const App: React.FC = () => {
               <Route path="/auth" element={<Auth />} />
               <Route path="/dashboard" element={<Dashboard />} />
               <Route path="/appointments" element={<Appointments />} />
+              <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/calendar-settings" element={<CalendarSettings />} />
               <Route path="/auth/calendar/callback" element={<CalendarAuthCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}

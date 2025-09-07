@@ -201,6 +201,72 @@ export type Database = {
         }
         Relationships: []
       }
+      campaigns: {
+        Row: {
+          agency_id: string
+          budget: number | null
+          campaign_type: string
+          campaign_url: string | null
+          created_at: string
+          created_by: string
+          description: string | null
+          end_date: string | null
+          id: string
+          name: string
+          start_date: string | null
+          status: string
+          target_audience: string | null
+          updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
+        }
+        Insert: {
+          agency_id: string
+          budget?: number | null
+          campaign_type: string
+          campaign_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name: string
+          start_date?: string | null
+          status?: string
+          target_audience?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Update: {
+          agency_id?: string
+          budget?: number | null
+          campaign_type?: string
+          campaign_url?: string | null
+          created_at?: string
+          created_by?: string
+          description?: string | null
+          end_date?: string | null
+          id?: string
+          name?: string
+          start_date?: string | null
+          status?: string
+          target_audience?: string | null
+          updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
+        }
+        Relationships: []
+      }
       kpi_daily: {
         Row: {
           agency_id: string
@@ -277,36 +343,63 @@ export type Database = {
       leads: {
         Row: {
           agency_id: string
+          campaign_id: string | null
           created_at: string
           email: string | null
           full_name: string | null
           id: string
+          landing_page: string | null
           phone: string | null
+          referrer_url: string | null
           source: string | null
+          source_details: Json | null
           status: string | null
           updated_at: string
+          utm_campaign: string | null
+          utm_content: string | null
+          utm_medium: string | null
+          utm_source: string | null
+          utm_term: string | null
         }
         Insert: {
           agency_id: string
+          campaign_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          landing_page?: string | null
           phone?: string | null
+          referrer_url?: string | null
           source?: string | null
+          source_details?: Json | null
           status?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Update: {
           agency_id?: string
+          campaign_id?: string | null
           created_at?: string
           email?: string | null
           full_name?: string | null
           id?: string
+          landing_page?: string | null
           phone?: string | null
+          referrer_url?: string | null
           source?: string | null
+          source_details?: Json | null
           status?: string | null
           updated_at?: string
+          utm_campaign?: string | null
+          utm_content?: string | null
+          utm_medium?: string | null
+          utm_source?: string | null
+          utm_term?: string | null
         }
         Relationships: [
           {
@@ -315,6 +408,20 @@ export type Database = {
             isOneToOne: false
             referencedRelation: "agencies"
             referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "campaigns"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "leads_campaign_id_fkey"
+            columns: ["campaign_id"]
+            isOneToOne: false
+            referencedRelation: "mv_campaign_performance"
+            referencedColumns: ["campaign_id"]
           },
         ]
       }
@@ -428,6 +535,28 @@ export type Database = {
       }
     }
     Views: {
+      mv_campaign_performance: {
+        Row: {
+          agency_id: string | null
+          booked_leads: number | null
+          budget: number | null
+          campaign_id: string | null
+          campaign_name: string | null
+          campaign_type: string | null
+          contacted_leads: number | null
+          conversion_rate: number | null
+          cost_per_lead: number | null
+          created_at: string | null
+          lost_leads: number | null
+          new_leads: number | null
+          showed_leads: number | null
+          status: string | null
+          total_leads: number | null
+          updated_at: string | null
+          won_leads: number | null
+        }
+        Relationships: []
+      }
       mv_kpi_agency_daily: {
         Row: {
           agency_id: string | null
@@ -487,6 +616,10 @@ export type Database = {
       is_member: {
         Args: { aid: string }
         Returns: boolean
+      }
+      refresh_campaign_performance: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
       }
       refresh_kpis: {
         Args: Record<PropertyKey, never>
