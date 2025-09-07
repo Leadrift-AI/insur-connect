@@ -21,7 +21,7 @@ export interface CalendarEvent {
 export interface CalendarIntegration {
   id: string;
   user_id: string;
-  provider: 'google' | 'outlook';
+  provider: string; // Allow any string to match database types
   access_token: string;
   refresh_token?: string;
   expires_at?: string;
@@ -127,12 +127,23 @@ class CalendarService {
       throw new Error('Failed to fetch appointment details');
     }
 
+    // Get the user's profile to find their user_id from the agency
+    const { data: profile, error: profileError } = await supabase
+      .from('profiles')
+      .select('user_id')
+      .eq('agency_id', appointment.agency_id)
+      .single();
+
+    if (profileError || !profile) {
+      throw new Error('Failed to fetch user profile');
+    }
+
     const { data: integration, error: integrationError } = await supabase
       .from('calendar_integrations')
       .select('*')
-      .eq('user_id', appointment.user_id)
+      .eq('user_id', profile.user_id)
       .eq('is_active', true)
-      .single();
+      .maybeSingle();
 
     if (integrationError || !integration) {
       console.log('No active calendar integration found');

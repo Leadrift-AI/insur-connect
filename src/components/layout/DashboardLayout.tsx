@@ -34,6 +34,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Dashboard', href: '/dashboard', icon: Home, current: true },
     { name: 'Leads', href: '/leads', icon: Users, current: false },
     { name: 'Appointments', href: '/appointments', icon: Calendar, current: false },
+    { name: 'Calendar Settings', href: '/calendar-settings', icon: Settings, current: false },
     { name: 'Reports', href: '/reports', icon: BarChart3, current: false },
     { name: 'Policies', href: '/policies', icon: FileText, current: false },
     { name: 'Goals', href: '/goals', icon: Target, current: false },

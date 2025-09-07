@@ -114,6 +114,7 @@ export type Database = {
       appointments: {
         Row: {
           agency_id: string
+          calendar_event_id: string | null
           created_at: string
           id: string
           lead_id: string | null
@@ -124,6 +125,7 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          calendar_event_id?: string | null
           created_at?: string
           id?: string
           lead_id?: string | null
@@ -134,6 +136,7 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          calendar_event_id?: string | null
           created_at?: string
           id?: string
           lead_id?: string | null
@@ -158,6 +161,45 @@ export type Database = {
             referencedColumns: ["id"]
           },
         ]
+      }
+      calendar_integrations: {
+        Row: {
+          access_token: string
+          calendar_id: string | null
+          created_at: string
+          expires_at: string | null
+          id: string
+          is_active: boolean
+          provider: string
+          refresh_token: string | null
+          updated_at: string
+          user_id: string
+        }
+        Insert: {
+          access_token: string
+          calendar_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id: string
+        }
+        Update: {
+          access_token?: string
+          calendar_id?: string | null
+          created_at?: string
+          expires_at?: string | null
+          id?: string
+          is_active?: boolean
+          provider?: string
+          refresh_token?: string | null
+          updated_at?: string
+          user_id?: string
+        }
+        Relationships: []
       }
       kpi_daily: {
         Row: {

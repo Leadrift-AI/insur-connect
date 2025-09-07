@@ -12,6 +12,7 @@ import { format } from 'date-fns';
 import { useAuth } from '@/hooks/useAuth';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useCalendarSync } from '@/hooks/useCalendarSync';
 import { cn } from '@/lib/utils';
 
 interface Lead {
@@ -100,7 +101,7 @@ const CreateAppointmentDialog = ({ open, onOpenChange, onSuccess }: CreateAppoin
       }
 
       // Create appointment
-      const { error } = await supabase
+      const { data: appointmentData, error } = await supabase
         .from('appointments')
         .insert({
           agency_id: profile.agency_id,
@@ -108,7 +109,9 @@ const CreateAppointmentDialog = ({ open, onOpenChange, onSuccess }: CreateAppoin
           scheduled_at: scheduledAt.toISOString(),
           status: 'scheduled',
           notes: notes
-        });
+        })
+        .select()
+        .single();
 
       if (error) {
         console.error('Error creating appointment:', error);
@@ -122,6 +125,12 @@ const CreateAppointmentDialog = ({ open, onOpenChange, onSuccess }: CreateAppoin
           title: "Success",
           description: "Appointment scheduled successfully!"
         });
+
+        // Sync to calendar if integration exists
+        if (appointmentData?.id) {
+          await syncAppointment(appointmentData.id);
+        }
+
         onSuccess();
       }
     } catch (error) {
