@@ -3,6 +3,7 @@ import { Button } from '@/components/ui/button';
 import { 
   BarChart3, 
   Calendar, 
+  CreditCard,
   FileText, 
   Home, 
   LogOut, 
@@ -37,6 +38,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
     { name: 'Appointments', href: '/appointments', icon: Calendar, current: false },
     { name: 'Calendar Settings', href: '/calendar-settings', icon: Settings, current: false },
     { name: 'Reports', href: '/reports', icon: BarChart3, current: false },
+    { name: 'Billing', href: '/billing', icon: CreditCard, current: false },
     { name: 'Policies', href: '/policies', icon: FileText, current: false },
     { name: 'Goals', href: '/goals', icon: Target, current: false },
     { name: 'Settings', href: '/settings', icon: Settings, current: false },

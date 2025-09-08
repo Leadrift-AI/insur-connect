@@ -13,6 +13,7 @@ import Campaigns from "./pages/Campaigns";
 import CalendarSettings from "./pages/CalendarSettings";
 import CalendarAuthCallback from "./components/calendar/CalendarAuthCallback";
 import Reports from "./pages/Reports";
+import Billing from "./pages/Billing";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
@@ -32,6 +33,7 @@ const App: React.FC = () => {
               <Route path="/appointments" element={<Appointments />} />
               <Route path="/campaigns" element={<Campaigns />} />
               <Route path="/reports" element={<Reports />} />
+              <Route path="/billing" element={<Billing />} />
               <Route path="/calendar-settings" element={<CalendarSettings />} />
               <Route path="/auth/calendar/callback" element={<CalendarAuthCallback />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
