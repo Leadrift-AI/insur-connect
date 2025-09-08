@@ -2,12 +2,9 @@ import { Button } from "@/components/ui/button";
 import { ArrowRight, Play, TrendingUp, Users, Zap } from "lucide-react";
 import { useNavigate } from "react-router-dom";
 import heroImage from "@/assets/hero-insurance.jpg";
-
 const HeroSection = () => {
   const navigate = useNavigate();
-
-  return (
-    <section className="relative py-20 lg:py-32 overflow-hidden">
+  return <section className="relative py-20 lg:py-32 overflow-hidden">
       {/* Background Pattern */}
       <div className="absolute inset-0 bg-gradient-to-br from-leadrift-white via-background to-muted/20 -z-10" />
       <div className="absolute top-0 right-0 w-1/2 h-full opacity-5 bg-gradient-to-l from-accent to-transparent -z-10" />
@@ -26,7 +23,7 @@ const HeroSection = () => {
             <div className="space-y-4">
               <h1 className="text-4xl md:text-5xl lg:text-6xl font-montserrat font-bold text-primary leading-tight">
                 Free Your Agents From{" "}
-                <span className="gradient-primary bg-clip-text text-transparent">
+                <span className="gradient-primary bg-clip-text text-transparent mx-0">
                   Busywork
                 </span>
               </h1>
@@ -59,12 +56,7 @@ const HeroSection = () => {
 
             {/* CTA Buttons */}
             <div className="flex flex-col sm:flex-row gap-4">
-              <Button 
-                variant="hero" 
-                size="xl" 
-                className="group"
-                onClick={() => navigate('/auth')}
-              >
+              <Button variant="hero" size="xl" className="group" onClick={() => navigate('/auth')}>
                 Start Free Trial
                 <ArrowRight className="w-5 h-5 group-hover:translate-x-1 transition-transform" />
               </Button>
@@ -91,11 +83,7 @@ const HeroSection = () => {
           {/* Image */}
           <div className="relative">
             <div className="relative rounded-2xl overflow-hidden shadow-elegant">
-              <img
-                src={heroImage}
-                alt="Insurance agent using Leadrift AI dashboard"
-                className="w-full h-auto object-cover"
-              />
+              <img src={heroImage} alt="Insurance agent using Leadrift AI dashboard" className="w-full h-auto object-cover" />
               <div className="absolute inset-0 bg-gradient-to-t from-primary/20 to-transparent" />
             </div>
             
@@ -118,8 +106,6 @@ const HeroSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default HeroSection;

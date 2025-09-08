@@ -1,58 +1,39 @@
 import { Button } from "@/components/ui/button";
 import { Card } from "@/components/ui/card";
-import { 
-  Zap, 
-  MessageSquare, 
-  Calendar, 
-  BarChart3, 
-  Users, 
-  Clock,
-  ArrowRight,
-  CheckCircle 
-} from "lucide-react";
-
+import { Zap, MessageSquare, Calendar, BarChart3, Users, Clock, ArrowRight, CheckCircle } from "lucide-react";
 const SolutionSection = () => {
-  const features = [
-    {
-      icon: Zap,
-      title: "Smart Lead Acquisition",
-      description: "AI-powered lead capture and pre-qualification from multiple sources",
-      benefits: ["Automated lead scoring", "Source attribution", "Instant notifications"]
-    },
-    {
-      icon: MessageSquare,
-      title: "Automated Follow-Ups",
-      description: "Intelligent SMS and email sequences that nurture leads automatically",
-      benefits: ["Personalized messaging", "Optimal send times", "Response tracking"]
-    },
-    {
-      icon: Calendar,
-      title: "Smart Scheduling",
-      description: "One-click appointment booking directly into agent calendars",
-      benefits: ["Calendar integration", "Automatic reminders", "Reschedule handling"]
-    },
-    {
-      icon: BarChart3,
-      title: "Real-Time Analytics",
-      description: "Complete visibility into your sales pipeline and agent performance",
-      benefits: ["Live dashboards", "Conversion tracking", "Revenue forecasting"]
-    },
-    {
-      icon: Users,
-      title: "Team Management",
-      description: "Multi-agent support with role-based access and collaboration tools",
-      benefits: ["Agent performance", "Lead distribution", "Team leaderboards"]
-    },
-    {
-      icon: Clock,
-      title: "Time Recovery",
-      description: "Eliminate 85% of admin work so agents focus on closing deals",
-      benefits: ["Automated workflows", "Document generation", "Compliance tracking"]
-    }
-  ];
-
-  return (
-    <section className="py-20 bg-background">
+  const features = [{
+    icon: Zap,
+    title: "Smart Lead Acquisition",
+    description: "AI-powered lead capture and pre-qualification from multiple sources",
+    benefits: ["Automated lead scoring", "Source attribution", "Instant notifications"]
+  }, {
+    icon: MessageSquare,
+    title: "Automated Follow-Ups",
+    description: "Intelligent SMS and email sequences that nurture leads automatically",
+    benefits: ["Personalized messaging", "Optimal send times", "Response tracking"]
+  }, {
+    icon: Calendar,
+    title: "Smart Scheduling",
+    description: "One-click appointment booking directly into agent calendars",
+    benefits: ["Calendar integration", "Automatic reminders", "Reschedule handling"]
+  }, {
+    icon: BarChart3,
+    title: "Real-Time Analytics",
+    description: "Complete visibility into your sales pipeline and agent performance",
+    benefits: ["Live dashboards", "Conversion tracking", "Revenue forecasting"]
+  }, {
+    icon: Users,
+    title: "Team Management",
+    description: "Multi-agent support with role-based access and collaboration tools",
+    benefits: ["Agent performance", "Lead distribution", "Team leaderboards"]
+  }, {
+    icon: Clock,
+    title: "Time Recovery",
+    description: "Eliminate 85% of admin work so agents focus on closing deals",
+    benefits: ["Automated workflows", "Document generation", "Compliance tracking"]
+  }];
+  return <section className="py-20 bg-background">
       <div className="container mx-auto px-4">
         {/* Header */}
         <div className="text-center mb-16">
@@ -62,7 +43,7 @@ const SolutionSection = () => {
           </div>
           <h2 className="text-3xl md:text-4xl font-montserrat font-bold text-primary mb-4">
             Your Complete Insurance Sales{" "}
-            <span className="gradient-primary bg-clip-text text-transparent">
+            <span className="gradient-primary bg-clip-text text-transparent mx-0">
               Automation Platform
             </span>
           </h2>
@@ -74,8 +55,7 @@ const SolutionSection = () => {
 
         {/* Features Grid */}
         <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-8 mb-16">
-          {features.map((feature, index) => (
-            <Card key={index} className="p-6 hover:shadow-card transition-smooth bg-white group hover:scale-105">
+          {features.map((feature, index) => <Card key={index} className="p-6 hover:shadow-card transition-smooth bg-white group hover:scale-105">
               <div className="space-y-4">
                 <div className="w-12 h-12 gradient-primary rounded-lg flex items-center justify-center">
                   <feature.icon className="w-6 h-6 text-white" />
@@ -88,17 +68,14 @@ const SolutionSection = () => {
                     {feature.description}
                   </p>
                   <div className="space-y-2">
-                    {feature.benefits.map((benefit, idx) => (
-                      <div key={idx} className="flex items-center space-x-2">
+                    {feature.benefits.map((benefit, idx) => <div key={idx} className="flex items-center space-x-2">
                         <CheckCircle className="w-4 h-4 text-secondary" />
                         <span className="text-sm text-muted-foreground">{benefit}</span>
-                      </div>
-                    ))}
+                      </div>)}
                   </div>
                 </div>
               </div>
-            </Card>
-          ))}
+            </Card>)}
         </div>
 
         {/* Process Flow */}
@@ -107,23 +84,30 @@ const SolutionSection = () => {
             How Leadrift AI Works
           </h3>
           <div className="grid md:grid-cols-4 gap-6">
-            {[
-              { step: "1", title: "Capture", desc: "Leads flow in from all sources" },
-              { step: "2", title: "Qualify", desc: "AI scores and prioritizes prospects" },
-              { step: "3", title: "Nurture", desc: "Automated follow-ups warm leads" },
-              { step: "4", title: "Close", desc: "Agents focus on final conversations" }
-            ].map((item, index) => (
-              <div key={index} className="text-center relative">
+            {[{
+            step: "1",
+            title: "Capture",
+            desc: "Leads flow in from all sources"
+          }, {
+            step: "2",
+            title: "Qualify",
+            desc: "AI scores and prioritizes prospects"
+          }, {
+            step: "3",
+            title: "Nurture",
+            desc: "Automated follow-ups warm leads"
+          }, {
+            step: "4",
+            title: "Close",
+            desc: "Agents focus on final conversations"
+          }].map((item, index) => <div key={index} className="text-center relative">
                 <div className="w-12 h-12 gradient-primary rounded-full flex items-center justify-center text-white font-bold mx-auto mb-3">
                   {item.step}
                 </div>
                 <h4 className="font-montserrat font-semibold text-primary mb-2">{item.title}</h4>
                 <p className="text-sm text-muted-foreground">{item.desc}</p>
-                {index < 3 && (
-                  <ArrowRight className="hidden md:block absolute top-6 -right-3 w-6 h-6 text-accent" />
-                )}
-              </div>
-            ))}
+                {index < 3 && <ArrowRight className="hidden md:block absolute top-6 -right-3 w-6 h-6 text-accent" />}
+              </div>)}
           </div>
         </div>
 
@@ -165,8 +149,6 @@ const SolutionSection = () => {
           </div>
         </div>
       </div>
-    </section>
-  );
+    </section>;
 };
-
 export default SolutionSection;
