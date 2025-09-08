@@ -164,12 +164,12 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
           <div className="space-y-2">
             <Label>Agent</Label>
-            <Select value={filters.agentId || ''} onValueChange={(value) => handleFilterChange('agentId', value || undefined)}>
+            <Select value={filters.agentId || 'all'} onValueChange={(value) => handleFilterChange('agentId', value === 'all' ? undefined : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="All agents" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All agents</SelectItem>
+                <SelectItem value="all">All agents</SelectItem>
                 {agents.map(agent => (
                   <SelectItem key={agent} value={agent}>
                     {agent}
@@ -181,12 +181,12 @@ export const AdvancedFilters: React.FC<AdvancedFiltersProps> = ({
 
           <div className="space-y-2">
             <Label>Campaign Type</Label>
-            <Select value={filters.campaignType || ''} onValueChange={(value) => handleFilterChange('campaignType', value || undefined)}>
+            <Select value={filters.campaignType || 'all'} onValueChange={(value) => handleFilterChange('campaignType', value === 'all' ? undefined : value)}>
               <SelectTrigger>
                 <SelectValue placeholder="All types" />
               </SelectTrigger>
               <SelectContent>
-                <SelectItem value="">All types</SelectItem>
+                <SelectItem value="all">All types</SelectItem>
                 {campaignTypes.map(type => (
                   <SelectItem key={type} value={type}>
                     {type}
