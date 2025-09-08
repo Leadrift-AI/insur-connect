@@ -1,26 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Badge } from '@/components/ui/badge';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Progress } from '@/components/ui/progress';
 import { 
-  TrendingUp, 
-  TrendingDown, 
-  Users, 
-  Target, 
-  DollarSign, 
-  FileText,
-  Download,
   Trophy,
-  Calendar,
-  BarChart3,
-  PieChart,
   LineChart,
-  Plus
+  Plus,
+  Activity,
+  Zap
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -35,43 +27,21 @@ import {
   XAxis, 
   YAxis, 
   CartesianGrid, 
-  Tooltip, 
   ResponsiveContainer,
   Legend
 } from 'recharts';
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
-import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
 import jsPDF from 'jspdf';
 import autoTable from 'jspdf-autotable';
 
-interface ReportsData {
-  roas: number;
-  totalRevenue: number;
-  totalSpend: number;
-  conversionRate: number;
-  totalLeads: number;
-  totalPolicies: number;
-  roasHistory: Array<{
-    date: string;
-    roas: number;
-    revenue: number;
-    spend: number;
-  }>;
-  agentPerformance: Array<{
-    name: string;
-    leads: number;
-    policies: number;
-    revenue: number;
-    conversionRate: number;
-  }>;
-  policyTypes: Array<{
-    type: string;
-    count: number;
-    revenue: number;
-    color: string;
-  }>;
-}
+// Import new components and hooks
+import { useRealtimeReports } from '@/hooks/useRealtimeReports';
+import { FilterOptions } from '@/hooks/useReportsData';
+import { KPICards } from './KPICards';
+import { ConversionFunnel } from './ConversionFunnel';
+import { CampaignROI } from './CampaignROI';
+import { AdvancedFilters } from './AdvancedFilters';
 
 interface Goal {
   id: string;
@@ -100,84 +70,27 @@ const chartConfig = {
 };
 
 export const ReportsAnalytics: React.FC = () => {
-  const [reportsData, setReportsData] = useState<ReportsData | null>(null);
   const [goals, setGoals] = useState<Goal[]>([]);
-  const [loading, setLoading] = useState(true);
-  const [timeRange, setTimeRange] = useState('30d');
   const [newGoal, setNewGoal] = useState({ title: '', target: '', deadline: '', type: 'policies' as Goal['type'] });
+  const [filters, setFilters] = useState<FilterOptions>({ timeRange: '30d' });
+  
   const { toast } = useToast();
+  
+  // Use the new realtime reports hook
+  const { 
+    reportsData, 
+    loading, 
+    error, 
+    refetch, 
+    isRealtime, 
+    lastUpdate, 
+    toggleRealtime 
+  } = useRealtimeReports(filters);
 
-  useEffect(() => {
-    fetchReportsData();
+  // Initialize goals
+  React.useEffect(() => {
     fetchGoals();
-  }, [timeRange]);
-
-  const fetchReportsData = async () => {
-    try {
-      const { data: { user } } = await supabase.auth.getUser();
-      if (!user) return;
-
-      const { data: profile } = await supabase
-        .from('profiles')
-        .select('agency_id')
-        .eq('user_id', user.id)
-        .single();
-
-      if (!profile?.agency_id) return;
-
-      // Fetch leads and campaigns data
-      const { data: leads } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('agency_id', profile.agency_id);
-
-      const { data: campaigns } = await supabase
-        .from('campaigns')
-        .select('*')
-        .eq('agency_id', profile.agency_id);
-
-      // Mock data for demonstration - in real app this would come from actual metrics
-      const mockReportsData: ReportsData = {
-        roas: 4.2,
-        totalRevenue: 125000,
-        totalSpend: 29800,
-        conversionRate: 12.5,
-        totalLeads: leads?.length || 0,
-        totalPolicies: Math.floor((leads?.length || 0) * 0.125),
-        roasHistory: Array.from({ length: 30 }, (_, i) => ({
-          date: new Date(Date.now() - (29 - i) * 24 * 60 * 60 * 1000).toISOString().split('T')[0],
-          roas: 3.5 + Math.random() * 1.5,
-          revenue: 3000 + Math.random() * 2000,
-          spend: 800 + Math.random() * 400,
-        })),
-        agentPerformance: [
-          { name: 'Sarah Johnson', leads: 45, policies: 12, revenue: 18500, conversionRate: 26.7 },
-          { name: 'Mike Chen', leads: 38, policies: 9, revenue: 15200, conversionRate: 23.7 },
-          { name: 'Emma Davis', leads: 42, policies: 8, revenue: 14100, conversionRate: 19.0 },
-          { name: 'Alex Rodriguez', leads: 35, policies: 7, revenue: 12800, conversionRate: 20.0 },
-          { name: 'Lisa Wang', leads: 28, policies: 6, revenue: 11200, conversionRate: 21.4 },
-        ],
-        policyTypes: [
-          { type: 'Auto Insurance', count: 18, revenue: 35000, color: COLORS[0] },
-          { type: 'Home Insurance', count: 12, revenue: 28000, color: COLORS[1] },
-          { type: 'Life Insurance', count: 8, revenue: 42000, color: COLORS[2] },
-          { type: 'Health Insurance', count: 6, revenue: 15000, color: COLORS[3] },
-          { type: 'Business Insurance', count: 4, revenue: 5000, color: COLORS[4] },
-        ],
-      };
-
-      setReportsData(mockReportsData);
-    } catch (error) {
-      console.error('Error fetching reports data:', error);
-      toast({
-        title: 'Error',
-        description: 'Failed to load reports data',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoading(false);
-    }
-  };
+  }, []);
 
   const fetchGoals = async () => {
     // Mock goals data - in real app this would be stored in database
@@ -222,7 +135,7 @@ export const ReportsAnalytics: React.FC = () => {
     
     // Add metadata
     doc.setFontSize(12);
-    doc.text(`Time Period: ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}`, 20, 35);
+    doc.text(`Time Period: ${filters.timeRange.charAt(0).toUpperCase() + filters.timeRange.slice(1)}`, 20, 35);
     doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 45);
     
     // Add KPI section
@@ -265,7 +178,7 @@ export const ReportsAnalytics: React.FC = () => {
     });
     
     // Save the PDF
-    doc.save(`agency-report-${timeRange}-${new Date().toISOString().split('T')[0]}.pdf`);
+    doc.save(`agency-report-${filters.timeRange}-${new Date().toISOString().split('T')[0]}.pdf`);
     
     toast({
       title: 'Export Complete',
@@ -324,11 +237,32 @@ export const ReportsAnalytics: React.FC = () => {
     });
   };
 
-  if (loading || !reportsData) {
+  if (loading) {
     return (
       <Card>
         <CardContent className="p-6">
-          <div className="text-center">Loading reports...</div>
+          <div className="flex items-center justify-center space-x-2">
+            <Activity className="h-4 w-4 animate-spin" />
+            <span>Loading reports...</span>
+          </div>
+        </CardContent>
+      </Card>
+    );
+  }
+
+  if (error || !reportsData) {
+    return (
+      <Card>
+        <CardContent className="p-6">
+          <div className="text-center">
+            <p className="text-muted-foreground mb-4">
+              {error || 'Failed to load reports data'}
+            </p>
+            <Button onClick={refetch}>
+              <Zap className="h-4 w-4 mr-2" />
+              Retry
+            </Button>
+          </div>
         </CardContent>
       </Card>
     );
@@ -336,103 +270,48 @@ export const ReportsAnalytics: React.FC = () => {
 
   return (
     <div className="space-y-6">
-      {/* Header with Export Options */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center justify-between">
-        <div>
-          <h2 className="text-2xl font-bold">Reports & Analytics</h2>
-          <p className="text-muted-foreground">Real-time insights and performance tracking</p>
-        </div>
-        <div className="flex gap-2">
-          <Select value={timeRange} onValueChange={setTimeRange}>
-            <SelectTrigger className="w-32">
-              <SelectValue />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="7d">Last 7 days</SelectItem>
-              <SelectItem value="30d">Last 30 days</SelectItem>
-              <SelectItem value="90d">Last 90 days</SelectItem>
-              <SelectItem value="1y">Last year</SelectItem>
-            </SelectContent>
-          </Select>
-          <Button variant="outline" onClick={exportToCSV}>
-            <Download className="h-4 w-4 mr-2" />
-            CSV
-          </Button>
-          <Button variant="outline" onClick={exportToPDF}>
-            <FileText className="h-4 w-4 mr-2" />
-            PDF
-          </Button>
-        </div>
+      {/* Header */}
+      <div>
+        <h2 className="text-3xl font-bold tracking-tight">Reports & Analytics</h2>
+        <p className="text-muted-foreground">Real-time insights and performance tracking for your agency</p>
       </div>
+
+      {/* Advanced Filters */}
+      <AdvancedFilters
+        filters={filters}
+        onFiltersChange={setFilters}
+        onExportCSV={exportToCSV}
+        onExportPDF={exportToPDF}
+        onRefresh={refetch}
+        isRealtime={isRealtime}
+        onToggleRealtime={toggleRealtime}
+      />
 
       {/* KPI Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">ROAS</CardTitle>
-            <TrendingUp className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reportsData.roas.toFixed(1)}x</div>
-            <p className="text-xs text-muted-foreground">
-              Return on Ad Spend
-            </p>
-          </CardContent>
-        </Card>
+      <KPICards 
+        data={reportsData} 
+        isRealtime={isRealtime} 
+        lastUpdate={lastUpdate} 
+      />
 
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Revenue</CardTitle>
-            <DollarSign className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">${reportsData.totalRevenue.toLocaleString()}</div>
-            <p className="text-xs text-muted-foreground">
-              +12% from last month
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Conversion Rate</CardTitle>
-            <Target className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reportsData.conversionRate}%</div>
-            <p className="text-xs text-muted-foreground">
-              Lead to policy conversion
-            </p>
-          </CardContent>
-        </Card>
-
-        <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Total Policies</CardTitle>
-            <Users className="h-4 w-4 text-muted-foreground" />
-          </CardHeader>
-          <CardContent>
-            <div className="text-2xl font-bold">{reportsData.totalPolicies}</div>
-            <p className="text-xs text-muted-foreground">
-              Sold this period
-            </p>
-          </CardContent>
-        </Card>
-      </div>
-
-      {/* Main Charts */}
-      <Tabs defaultValue="roas" className="space-y-4">
-        <TabsList className="grid w-full grid-cols-4">
-          <TabsTrigger value="roas">ROAS Trend</TabsTrigger>
-          <TabsTrigger value="agents">Agent Leaderboard</TabsTrigger>
-          <TabsTrigger value="policies">Policy Sales</TabsTrigger>
-          <TabsTrigger value="goals">Goal Tracking</TabsTrigger>
+      {/* Main Analytics */}
+      <Tabs defaultValue="overview" className="space-y-4">
+        <TabsList className="grid w-full grid-cols-6">
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="agents">Agents</TabsTrigger>
+          <TabsTrigger value="policies">Policies</TabsTrigger>
+          <TabsTrigger value="funnel">Funnel</TabsTrigger>
+          <TabsTrigger value="campaigns">Campaigns</TabsTrigger>
+          <TabsTrigger value="goals">Goals</TabsTrigger>
         </TabsList>
 
-        <TabsContent value="roas">
+        <TabsContent value="overview">
           <Card>
             <CardHeader>
-              <CardTitle>ROAS Performance Over Time</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <LineChart className="h-5 w-5" />
+                ROAS Performance Over Time
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Revenue vs Spend tracking with ROAS calculation
               </p>
@@ -445,6 +324,7 @@ export const ReportsAnalytics: React.FC = () => {
                   <YAxis />
                   <ChartTooltip content={<ChartTooltipContent />} />
                   <Area type="monotone" dataKey="roas" stroke="hsl(var(--primary))" fill="hsl(var(--primary))" fillOpacity={0.3} />
+                  <Area type="monotone" dataKey="revenue" stroke="hsl(var(--secondary))" fill="hsl(var(--secondary))" fillOpacity={0.1} />
                 </AreaChart>
               </ChartContainer>
             </CardContent>
@@ -454,7 +334,10 @@ export const ReportsAnalytics: React.FC = () => {
         <TabsContent value="agents">
           <Card>
             <CardHeader>
-              <CardTitle>Agent Performance Leaderboard</CardTitle>
+              <CardTitle className="flex items-center gap-2">
+                <Trophy className="h-5 w-5" />
+                Agent Performance Leaderboard
+              </CardTitle>
               <p className="text-sm text-muted-foreground">
                 Top performing agents by policies sold and conversion rate
               </p>
@@ -496,11 +379,22 @@ export const ReportsAnalytics: React.FC = () => {
           </Card>
         </TabsContent>
 
+        <TabsContent value="funnel">
+          <ConversionFunnel data={reportsData.conversionFunnel} />
+        </TabsContent>
+
+        <TabsContent value="campaigns">
+          <CampaignROI data={reportsData.campaignROI} />
+        </TabsContent>
+
         <TabsContent value="policies">
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
             <Card>
               <CardHeader>
-                <CardTitle>Policy Sales by Type</CardTitle>
+                <CardTitle>Policy Distribution</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Breakdown of policy types sold
+                </p>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className="h-64">
@@ -509,10 +403,11 @@ export const ReportsAnalytics: React.FC = () => {
                       data={reportsData.policyTypes}
                       cx="50%"
                       cy="50%"
+                      labelLine={false}
+                      label={({ type, percentage }) => `${type}: ${percentage}%`}
                       outerRadius={80}
                       fill="#8884d8"
                       dataKey="count"
-                      label={({ name, value }) => `${name}: ${value}`}
                     >
                       {reportsData.policyTypes.map((entry, index) => (
                         <Cell key={`cell-${index}`} fill={entry.color} />
@@ -527,6 +422,9 @@ export const ReportsAnalytics: React.FC = () => {
             <Card>
               <CardHeader>
                 <CardTitle>Revenue by Policy Type</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Revenue breakdown per insurance type
+                </p>
               </CardHeader>
               <CardContent>
                 <ChartContainer config={chartConfig} className="h-64">
@@ -544,84 +442,102 @@ export const ReportsAnalytics: React.FC = () => {
         </TabsContent>
 
         <TabsContent value="goals">
-          <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-            <Card>
-              <CardHeader>
-                <CardTitle>Current Goals</CardTitle>
-                <p className="text-sm text-muted-foreground">
-                  Track progress towards your targets
-                </p>
-              </CardHeader>
-              <CardContent>
-                <div className="space-y-4">
-                  {goals.map((goal) => (
-                    <div key={goal.id} className="space-y-2">
-                      <div className="flex items-center justify-between">
-                        <p className="font-medium">{goal.title}</p>
-                        <Badge variant="outline">
-                          {Math.round((goal.current / goal.target) * 100)}%
-                        </Badge>
-                      </div>
-                      <Progress value={(goal.current / goal.target) * 100} className="h-2" />
-                      <div className="flex items-center justify-between text-sm text-muted-foreground">
-                        <span>{goal.current} / {goal.target} {goal.type}</span>
-                        <span>Due: {new Date(goal.deadline).toLocaleDateString()}</span>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </CardContent>
-            </Card>
-
+          <div className="space-y-6">
+            {/* Add New Goal */}
             <Card>
               <CardHeader>
                 <CardTitle>Add New Goal</CardTitle>
               </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label htmlFor="goal-title">Goal Title</Label>
-                  <Input
-                    id="goal-title"
-                    value={newGoal.title}
-                    onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
-                    placeholder="e.g., Quarterly Sales Target"
-                  />
+              <CardContent>
+                <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+                  <div>
+                    <Label htmlFor="title">Goal Title</Label>
+                    <Input
+                      id="title"
+                      value={newGoal.title}
+                      onChange={(e) => setNewGoal({ ...newGoal, title: e.target.value })}
+                      placeholder="Enter goal title"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="target">Target</Label>
+                    <Input
+                      id="target"
+                      type="number"
+                      value={newGoal.target}
+                      onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
+                      placeholder="Enter target value"
+                    />
+                  </div>
+                  <div>
+                    <Label htmlFor="deadline">Deadline</Label>
+                    <Input
+                      id="deadline"
+                      type="date"
+                      value={newGoal.deadline}
+                      onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
+                    />
+                  </div>
+                  <div className="flex items-end">
+                    <Select value={newGoal.type} onValueChange={(value: Goal['type']) => setNewGoal({ ...newGoal, type: value })}>
+                      <SelectTrigger>
+                        <SelectValue />
+                      </SelectTrigger>
+                      <SelectContent>
+                        <SelectItem value="policies">Policies</SelectItem>
+                        <SelectItem value="revenue">Revenue</SelectItem>
+                        <SelectItem value="leads">Leads</SelectItem>
+                      </SelectContent>
+                    </Select>
+                  </div>
                 </div>
-                <div>
-                  <Label htmlFor="goal-target">Target</Label>
-                  <Input
-                    id="goal-target"
-                    type="number"
-                    value={newGoal.target}
-                    onChange={(e) => setNewGoal({ ...newGoal, target: e.target.value })}
-                    placeholder="e.g., 100"
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="goal-type">Goal Type</Label>
-                  <Select value={newGoal.type} onValueChange={(value: Goal['type']) => setNewGoal({ ...newGoal, type: value })}>
-                    <SelectTrigger>
-                      <SelectValue />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="policies">Policies</SelectItem>
-                      <SelectItem value="revenue">Revenue</SelectItem>
-                      <SelectItem value="leads">Leads</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="goal-deadline">Deadline</Label>
-                  <Input
-                    id="goal-deadline"
-                    type="date"
-                    value={newGoal.deadline}
-                    onChange={(e) => setNewGoal({ ...newGoal, deadline: e.target.value })}
-                  />
-                </div>
-                <Button onClick={addGoal} className="w-full">
+                <Button onClick={addGoal} className="mt-4">
+                  <Plus className="h-4 w-4 mr-2" />
                   Add Goal
                 </Button>
+              </CardContent>
+            </Card>
+
+            {/* Current Goals */}
+            <Card>
+              <CardHeader>
+                <CardTitle>Current Goals</CardTitle>
+                <p className="text-sm text-muted-foreground">
+                  Track your agency's progress towards key objectives
+                </p>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {goals.map((goal) => {
+                    const progress = (goal.current / goal.target) * 100;
+                    const isOverdue = new Date(goal.deadline) < new Date();
+                    
+                    return (
+                      <div key={goal.id} className="p-4 border rounded-lg">
+                        <div className="flex items-start justify-between mb-2">
+                          <div>
+                            <h4 className="font-medium">{goal.title}</h4>
+                            <p className="text-sm text-muted-foreground">
+                              {goal.current} / {goal.target} {goal.type}
+                            </p>
+                          </div>
+                          <div className="text-right">
+                            <Badge variant={isOverdue ? "destructive" : progress >= 100 ? "default" : "secondary"}>
+                              {isOverdue ? "Overdue" : progress >= 100 ? "Complete" : "In Progress"}
+                            </Badge>
+                            <p className="text-xs text-muted-foreground mt-1">
+                              Due: {new Date(goal.deadline).toLocaleDateString()}
+                            </p>
+                          </div>
+                        </div>
+                        <Progress value={Math.min(progress, 100)} className="h-2" />
+                        <p className="text-sm text-muted-foreground mt-1">
+                          {progress.toFixed(1)}% complete
+                        </p>
+                      </div>
+                    );
+                  })}
+                </div>
               </CardContent>
             </Card>
           </div>
