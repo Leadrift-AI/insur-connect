@@ -9,10 +9,12 @@ import { CreateCampaignDialog } from '@/components/campaigns/CreateCampaignDialo
 import { CampaignsList } from '@/components/campaigns/CampaignsList';
 import { CampaignPerformance } from '@/components/campaigns/CampaignPerformance';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
 const Campaigns: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
   const { toast } = useToast();
+  const { canManageCampaigns } = useUserRole();
 
   const handleCampaignCreated = () => {
     setIsCreateDialogOpen(false);
@@ -30,13 +32,18 @@ const Campaigns: React.FC = () => {
           <div>
             <h1 className="text-3xl font-bold">Campaign Builder</h1>
             <p className="text-muted-foreground mt-2">
-              Create and track your marketing campaigns across multiple channels
+              {canManageCampaigns 
+                ? "Create and track your marketing campaigns across multiple channels"
+                : "View campaign analytics and performance data"
+              }
             </p>
           </div>
-          <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
-            <Plus className="h-4 w-4" />
-            Create Campaign
-          </Button>
+          {canManageCampaigns && (
+            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+              <Plus className="h-4 w-4" />
+              Create Campaign
+            </Button>
+          )}
         </div>
 
         {/* Campaign Overview Cards */}

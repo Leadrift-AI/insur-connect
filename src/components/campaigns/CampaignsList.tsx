@@ -19,6 +19,7 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import { useUserRole } from '@/hooks/useUserRole';
 
 interface Campaign {
   id: string;
@@ -37,6 +38,7 @@ export const CampaignsList: React.FC = () => {
   const [campaigns, setCampaigns] = useState<Campaign[]>([]);
   const [loading, setLoading] = useState(true);
   const { toast } = useToast();
+  const { canManageCampaigns } = useUserRole();
 
   useEffect(() => {
     fetchCampaigns();
@@ -257,32 +259,36 @@ export const CampaignsList: React.FC = () => {
                         <Eye className="mr-2 h-4 w-4" />
                         View Details
                       </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Edit className="mr-2 h-4 w-4" />
-                        Edit Campaign
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        onClick={() => toggleCampaignStatus(campaign.id, campaign.status)}
-                      >
-                        {campaign.status === 'active' ? (
-                          <>
-                            <Pause className="mr-2 h-4 w-4" />
-                            Pause Campaign
-                          </>
-                        ) : (
-                          <>
-                            <Play className="mr-2 h-4 w-4" />
-                            Activate Campaign
-                          </>
-                        )}
-                      </DropdownMenuItem>
-                      <DropdownMenuItem
-                        className="text-red-600"
-                        onClick={() => deleteCampaign(campaign.id)}
-                      >
-                        <Trash2 className="mr-2 h-4 w-4" />
-                        Delete Campaign
-                      </DropdownMenuItem>
+                      {canManageCampaigns && (
+                        <>
+                          <DropdownMenuItem>
+                            <Edit className="mr-2 h-4 w-4" />
+                            Edit Campaign
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            onClick={() => toggleCampaignStatus(campaign.id, campaign.status)}
+                          >
+                            {campaign.status === 'active' ? (
+                              <>
+                                <Pause className="mr-2 h-4 w-4" />
+                                Pause Campaign
+                              </>
+                            ) : (
+                              <>
+                                <Play className="mr-2 h-4 w-4" />
+                                Activate Campaign
+                              </>
+                            )}
+                          </DropdownMenuItem>
+                          <DropdownMenuItem
+                            className="text-red-600"
+                            onClick={() => deleteCampaign(campaign.id)}
+                          >
+                            <Trash2 className="mr-2 h-4 w-4" />
+                            Delete Campaign
+                          </DropdownMenuItem>
+                        </>
+                      )}
                     </DropdownMenuContent>
                   </DropdownMenu>
                 </TableCell>
