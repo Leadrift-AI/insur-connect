@@ -7,10 +7,21 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from 
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
+import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole, UserRole } from '@/hooks/useUserRole';
+import { useUserSearch } from '@/hooks/useUserSearch';
+import { useUserActivity } from '@/hooks/useUserActivity';
 import { supabase } from '@/integrations/supabase/client';
-import { Plus, Mail, Users, Shield, UserCheck, Eye, Trash2 } from 'lucide-react';
+import { UserSearch } from './UserSearch';
+import { BulkInvitations } from './BulkInvitations';
+import { UserActivityLog } from './UserActivityLog';
+import { UserProfile } from './UserProfile';
+import { UserStatusManager } from './UserStatusManager';
+import { Plus, Mail, Users, Shield, UserCheck, Eye, Trash2, RefreshCw, MoreHorizontal, Clock, Send } from 'lucide-react';
+import { formatDistanceToNow } from 'date-fns';
 
 interface TeamMember {
   user_id: string;
@@ -18,6 +29,8 @@ interface TeamMember {
   created_at: string;
   email?: string;
   full_name?: string;
+  status?: string;
+  last_seen_at?: string;
 }
 
 interface PendingInvitation {
@@ -27,12 +40,15 @@ interface PendingInvitation {
   created_at: string;
   expires_at: string;
   invited_by: string;
+  resent_count?: number;
+  last_resent_at?: string;
 }
 
 export const UserManagement = () => {
   const [teamMembers, setTeamMembers] = useState<TeamMember[]>([]);
   const [pendingInvitations, setPendingInvitations] = useState<PendingInvitation[]>([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
   const [inviteDialogOpen, setInviteDialogOpen] = useState(false);
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('agent');
@@ -40,6 +56,15 @@ export const UserManagement = () => {
   
   const { toast } = useToast();
   const { agencyId, canManageUsers } = useUserRole();
+  const { logActivity } = useUserActivity();
+  
+  // Search and filtering
+  const { 
+    filters, 
+    filteredAndSortedMembers, 
+    updateFilter, 
+    resetFilters 
+  } = useUserSearch(teamMembers);
 
   useEffect(() => {
     if (agencyId && canManageUsers) {
@@ -58,7 +83,7 @@ export const UserManagement = () => {
           user_id,
           role,
           created_at,
-          profiles!inner(email, full_name)
+          profiles!inner(email, full_name, status, last_seen_at)
         `)
         .eq('agency_id', agencyId);
 
@@ -69,7 +94,9 @@ export const UserManagement = () => {
         role: member.role as UserRole,
         created_at: member.created_at,
         email: (member.profiles as any)?.email,
-        full_name: (member.profiles as any)?.full_name
+        full_name: (member.profiles as any)?.full_name,
+        status: (member.profiles as any)?.status || 'active',
+        last_seen_at: (member.profiles as any)?.last_seen_at
       })) || [];
 
       setTeamMembers(members);
@@ -101,6 +128,25 @@ export const UserManagement = () => {
     }
   };
 
+  const handleRefresh = async () => {
+    setRefreshing(true);
+    try {
+      await Promise.all([fetchTeamMembers(), fetchPendingInvitations()]);
+      toast({
+        title: "Data refreshed",
+        description: "Team member data has been updated",
+      });
+    } catch (error) {
+      toast({
+        title: "Error",
+        description: "Failed to refresh data",
+        variant: "destructive"
+      });
+    } finally {
+      setRefreshing(false);
+    }
+  };
+
   const sendInvitation = async () => {
     if (!agencyId || !inviteEmail || !inviteRole) return;
 
@@ -116,6 +162,8 @@ export const UserManagement = () => {
         });
 
       if (error) throw error;
+
+      await logActivity('user_invited', 'invitation', null, { email: inviteEmail, role: inviteRole });
 
       toast({
         title: "Invitation sent",
@@ -137,10 +185,73 @@ export const UserManagement = () => {
     }
   };
 
+  const resendInvitation = async (invitationId: string, email: string) => {
+    if (!agencyId) return;
+
+    try {
+      // Update invitation
+      const { error } = await supabase
+        .from('user_invitations')
+        .update({
+          expires_at: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days from now
+          resent_count: (pendingInvitations.find(inv => inv.id === invitationId)?.resent_count || 0) + 1,
+          last_resent_at: new Date().toISOString()
+        })
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      await logActivity('invitation_resent', 'invitation', invitationId, { email });
+
+      toast({
+        title: "Invitation resent",
+        description: `Invitation resent to ${email}`,
+      });
+
+      fetchPendingInvitations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to resend invitation",
+        variant: "destructive"
+      });
+    }
+  };
+
+  const cancelInvitation = async (invitationId: string, email: string) => {
+    if (!agencyId) return;
+
+    try {
+      const { error } = await supabase
+        .from('user_invitations')
+        .delete()
+        .eq('id', invitationId);
+
+      if (error) throw error;
+
+      await logActivity('invitation_cancelled', 'invitation', invitationId, { email });
+
+      toast({
+        title: "Invitation cancelled",
+        description: `Invitation for ${email} has been cancelled`,
+      });
+
+      fetchPendingInvitations();
+    } catch (error: any) {
+      toast({
+        title: "Error",
+        description: error.message || "Failed to cancel invitation",
+        variant: "destructive"
+      });
+    }
+  };
+
   const updateMemberRole = async (userId: string, newRole: UserRole) => {
     if (!agencyId) return;
 
     try {
+      const oldRole = teamMembers.find(m => m.user_id === userId)?.role;
+      
       const { error } = await supabase
         .from('agency_members')
         .update({ role: newRole })
@@ -148,6 +259,8 @@ export const UserManagement = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      await logActivity('role_updated', 'user', userId, { old_role: oldRole, new_role: newRole });
 
       toast({
         title: "Role updated",
@@ -168,6 +281,8 @@ export const UserManagement = () => {
     if (!agencyId) return;
 
     try {
+      const member = teamMembers.find(m => m.user_id === userId);
+      
       const { error } = await supabase
         .from('agency_members')
         .delete()
@@ -175,6 +290,11 @@ export const UserManagement = () => {
         .eq('user_id', userId);
 
       if (error) throw error;
+
+      await logActivity('member_removed', 'user', userId, { 
+        email: member?.email, 
+        name: member?.full_name 
+      });
 
       toast({
         title: "Member removed",
@@ -231,151 +351,264 @@ export const UserManagement = () => {
           <p className="text-muted-foreground">Manage your agency team members and their roles</p>
         </div>
         
-        <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
-          <DialogTrigger asChild>
-            <Button>
-              <Plus className="w-4 h-4 mr-2" />
-              Invite Member
-            </Button>
-          </DialogTrigger>
-          <DialogContent>
-            <DialogHeader>
-              <DialogTitle>Invite Team Member</DialogTitle>
-            </DialogHeader>
-            <div className="space-y-4">
-              <div>
-                <Label htmlFor="email">Email Address</Label>
-                <Input
-                  id="email"
-                  type="email"
-                  value={inviteEmail}
-                  onChange={(e) => setInviteEmail(e.target.value)}
-                  placeholder="Enter email address"
-                />
-              </div>
-              <div>
-                <Label htmlFor="role">Role</Label>
-                <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as UserRole)}>
-                  <SelectTrigger>
-                    <SelectValue />
-                  </SelectTrigger>
-                  <SelectContent>
-                    <SelectItem value="admin">Admin - Full access</SelectItem>
-                    <SelectItem value="agent">Agent - Lead management</SelectItem>
-                    <SelectItem value="staff">Staff - Limited access</SelectItem>
-                    <SelectItem value="manager">Manager - Read-only access</SelectItem>
-                  </SelectContent>
-                </Select>
-              </div>
-              <Button onClick={sendInvitation} disabled={submitting} className="w-full">
-                {submitting ? "Sending..." : "Send Invitation"}
+        <div className="flex items-center gap-2">
+          <Button
+            variant="outline"
+            onClick={handleRefresh}
+            disabled={refreshing}
+          >
+            <RefreshCw className={`w-4 h-4 mr-2 ${refreshing ? 'animate-spin' : ''}`} />
+            Refresh
+          </Button>
+          
+          <BulkInvitations onInvitationsSent={fetchPendingInvitations} />
+          
+          <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
+            <DialogTrigger asChild>
+              <Button>
+                <Plus className="w-4 h-4 mr-2" />
+                Invite Member
               </Button>
-            </div>
-          </DialogContent>
-        </Dialog>
+            </DialogTrigger>
+            <DialogContent>
+              <DialogHeader>
+                <DialogTitle>Invite Team Member</DialogTitle>
+              </DialogHeader>
+              <div className="space-y-4">
+                <div>
+                  <Label htmlFor="email">Email Address</Label>
+                  <Input
+                    id="email"
+                    type="email"
+                    value={inviteEmail}
+                    onChange={(e) => setInviteEmail(e.target.value)}
+                    placeholder="Enter email address"
+                  />
+                </div>
+                <div>
+                  <Label htmlFor="role">Role</Label>
+                  <Select value={inviteRole} onValueChange={(value) => setInviteRole(value as UserRole)}>
+                    <SelectTrigger>
+                      <SelectValue />
+                    </SelectTrigger>
+                    <SelectContent>
+                      <SelectItem value="admin">Admin - Full access</SelectItem>
+                      <SelectItem value="agent">Agent - Lead management</SelectItem>
+                      <SelectItem value="staff">Staff - Limited access</SelectItem>
+                      <SelectItem value="manager">Manager - Read-only access</SelectItem>
+                    </SelectContent>
+                  </Select>
+                </div>
+                <Button onClick={sendInvitation} disabled={submitting} className="w-full">
+                  {submitting ? "Sending..." : "Send Invitation"}
+                </Button>
+              </div>
+            </DialogContent>
+          </Dialog>
+        </div>
       </div>
 
-      {/* Pending Invitations */}
-      {pendingInvitations.length > 0 && (
-        <Card>
-          <CardHeader>
-            <CardTitle className="flex items-center gap-2">
-              <Mail className="w-5 h-5" />
-              Pending Invitations
-            </CardTitle>
-          </CardHeader>
-          <CardContent>
-            <div className="space-y-2">
-              {pendingInvitations.map((invitation) => (
-                <div key={invitation.id} className="flex items-center justify-between p-3 border rounded-lg">
-                  <div>
-                    <p className="font-medium">{invitation.email}</p>
-                    <p className="text-sm text-muted-foreground">
-                      Invited as {invitation.role} • Expires {new Date(invitation.expires_at).toLocaleDateString()}
-                    </p>
-                  </div>
-                  <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
-                    Pending
-                  </Badge>
-                </div>
-              ))}
-            </div>
-          </CardContent>
-        </Card>
-      )}
+      <Tabs defaultValue="members" className="space-y-4">
+        <TabsList>
+          <TabsTrigger value="members">Team Members ({teamMembers.length})</TabsTrigger>
+          <TabsTrigger value="invitations">
+            Pending Invitations ({pendingInvitations.length})
+          </TabsTrigger>
+          <TabsTrigger value="activity">Activity Log</TabsTrigger>
+        </TabsList>
 
-      {/* Team Members */}
-      <Card>
-        <CardHeader>
-          <CardTitle className="flex items-center gap-2">
-            <Users className="w-5 h-5" />
-            Team Members
-          </CardTitle>
-        </CardHeader>
-        <CardContent>
-          <Table>
-            <TableHeader>
-              <TableRow>
-                <TableHead>Name</TableHead>
-                <TableHead>Email</TableHead>
-                <TableHead>Role</TableHead>
-                <TableHead>Joined</TableHead>
-                <TableHead>Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody>
-              {teamMembers.map((member) => {
-                const RoleIcon = getRoleIcon(member.role);
-                return (
-                  <TableRow key={member.user_id}>
-                    <TableCell className="font-medium">
-                      {member.full_name || 'No name set'}
-                    </TableCell>
-                    <TableCell>{member.email}</TableCell>
-                    <TableCell>
-                      <Badge className={getRoleBadgeColor(member.role)}>
-                        <RoleIcon className="w-3 h-3 mr-1" />
-                        {member.role}
-                      </Badge>
-                    </TableCell>
-                    <TableCell>{new Date(member.created_at).toLocaleDateString()}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        {member.role !== 'owner' && (
-                          <>
-                            <Select
-                              value={member.role}
-                              onValueChange={(value) => updateMemberRole(member.user_id, value as UserRole)}
-                            >
-                              <SelectTrigger className="w-32">
-                                <SelectValue />
-                              </SelectTrigger>
-                              <SelectContent>
-                                <SelectItem value="admin">Admin</SelectItem>
-                                <SelectItem value="agent">Agent</SelectItem>
-                                <SelectItem value="staff">Staff</SelectItem>
-                                <SelectItem value="manager">Manager</SelectItem>
-                              </SelectContent>
-                            </Select>
-                            <Button
-                              variant="outline"
-                              size="sm"
-                              onClick={() => removeMember(member.user_id)}
-                              className="text-red-600 hover:text-red-700"
-                            >
-                              <Trash2 className="w-4 h-4" />
-                            </Button>
-                          </>
-                        )}
-                      </div>
-                    </TableCell>
+        <TabsContent value="members" className="space-y-4">
+          {/* Search and Filters */}
+          <UserSearch
+            filters={filters}
+            onFilterChange={updateFilter}
+            onResetFilters={resetFilters}
+            totalResults={filteredAndSortedMembers.length}
+          />
+
+          {/* Team Members Table */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Users className="w-5 h-5" />
+                Team Members
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <Table>
+                <TableHeader>
+                  <TableRow>
+                    <TableHead>Member</TableHead>
+                    <TableHead>Role</TableHead>
+                    <TableHead>Status</TableHead>
+                    <TableHead>Last Seen</TableHead>
+                    <TableHead>Joined</TableHead>
+                    <TableHead>Actions</TableHead>
                   </TableRow>
-                );
-              })}
-            </TableBody>
-          </Table>
-        </CardContent>
-      </Card>
+                </TableHeader>
+                <TableBody>
+                  {filteredAndSortedMembers.map((member) => {
+                    const RoleIcon = getRoleIcon(member.role);
+                    return (
+                      <TableRow key={member.user_id}>
+                        <TableCell>
+                          <div className="flex items-center gap-3">
+                            <Avatar className="w-8 h-8">
+                              <AvatarFallback>
+                                {(member.full_name || member.email || 'U').charAt(0).toUpperCase()}
+                              </AvatarFallback>
+                            </Avatar>
+                            <div>
+                              <p className="font-medium">{member.full_name || 'No name set'}</p>
+                              <p className="text-sm text-muted-foreground">{member.email}</p>
+                            </div>
+                          </div>
+                        </TableCell>
+                        <TableCell>
+                          <Badge className={getRoleBadgeColor(member.role)}>
+                            <RoleIcon className="w-3 h-3 mr-1" />
+                            {member.role}
+                          </Badge>
+                        </TableCell>
+                        <TableCell>
+                          <UserStatusManager
+                            userId={member.user_id}
+                            currentStatus={member.status || 'active'}
+                            userName={member.full_name || member.email || 'Unknown'}
+                            onStatusChanged={fetchTeamMembers}
+                          />
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          <div className="flex items-center gap-1">
+                            <Clock className="w-3 h-3" />
+                            {member.last_seen_at 
+                              ? formatDistanceToNow(new Date(member.last_seen_at), { addSuffix: true })
+                              : 'Never'
+                            }
+                          </div>
+                        </TableCell>
+                        <TableCell className="text-sm text-muted-foreground">
+                          {new Date(member.created_at).toLocaleDateString()}
+                        </TableCell>
+                        <TableCell>
+                          <div className="flex items-center gap-2">
+                            <UserProfile userId={member.user_id} />
+                            
+                            {member.role !== 'owner' && (
+                              <>
+                                <Select
+                                  value={member.role}
+                                  onValueChange={(value) => updateMemberRole(member.user_id, value as UserRole)}
+                                >
+                                  <SelectTrigger className="w-32">
+                                    <SelectValue />
+                                  </SelectTrigger>
+                                  <SelectContent>
+                                    <SelectItem value="admin">Admin</SelectItem>
+                                    <SelectItem value="agent">Agent</SelectItem>
+                                    <SelectItem value="staff">Staff</SelectItem>
+                                    <SelectItem value="manager">Manager</SelectItem>
+                                  </SelectContent>
+                                </Select>
+                                
+                                <DropdownMenu>
+                                  <DropdownMenuTrigger asChild>
+                                    <Button variant="outline" size="sm">
+                                      <MoreHorizontal className="w-4 h-4" />
+                                    </Button>
+                                  </DropdownMenuTrigger>
+                                  <DropdownMenuContent align="end">
+                                    <DropdownMenuItem
+                                      onClick={() => removeMember(member.user_id)}
+                                      className="text-red-600"
+                                    >
+                                      <Trash2 className="w-4 h-4 mr-2" />
+                                      Remove Member
+                                    </DropdownMenuItem>
+                                  </DropdownMenuContent>
+                                </DropdownMenu>
+                              </>
+                            )}
+                          </div>
+                        </TableCell>
+                      </TableRow>
+                    );
+                  })}
+                </TableBody>
+              </Table>
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="invitations" className="space-y-4">
+          {/* Pending Invitations */}
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex items-center gap-2">
+                <Mail className="w-5 h-5" />
+                Pending Invitations
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              {pendingInvitations.length === 0 ? (
+                <p className="text-center text-muted-foreground py-8">
+                  No pending invitations
+                </p>
+              ) : (
+                <div className="space-y-3">
+                  {pendingInvitations.map((invitation) => (
+                    <div key={invitation.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex-1">
+                        <p className="font-medium">{invitation.email}</p>
+                        <div className="flex items-center gap-4 text-sm text-muted-foreground mt-1">
+                          <span>Role: {invitation.role}</span>
+                          <span>Expires: {new Date(invitation.expires_at).toLocaleDateString()}</span>
+                          {invitation.resent_count && invitation.resent_count > 0 && (
+                            <span>Resent: {invitation.resent_count} times</span>
+                          )}
+                        </div>
+                      </div>
+                      
+                      <div className="flex items-center gap-2">
+                        <Badge variant="outline" className="bg-yellow-50 text-yellow-700 border-yellow-300">
+                          Pending
+                        </Badge>
+                        
+                        <DropdownMenu>
+                          <DropdownMenuTrigger asChild>
+                            <Button variant="outline" size="sm">
+                              <MoreHorizontal className="w-4 h-4" />
+                            </Button>
+                          </DropdownMenuTrigger>
+                          <DropdownMenuContent align="end">
+                            <DropdownMenuItem
+                              onClick={() => resendInvitation(invitation.id, invitation.email)}
+                            >
+                              <Send className="w-4 h-4 mr-2" />
+                              Resend Invitation
+                            </DropdownMenuItem>
+                            <DropdownMenuItem
+                              onClick={() => cancelInvitation(invitation.id, invitation.email)}
+                              className="text-red-600"
+                            >
+                              <Trash2 className="w-4 h-4 mr-2" />
+                              Cancel Invitation
+                            </DropdownMenuItem>
+                          </DropdownMenuContent>
+                        </DropdownMenu>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+
+        <TabsContent value="activity">
+          <UserActivityLog />
+        </TabsContent>
+      </Tabs>
     </div>
   );
 };

@@ -633,34 +633,46 @@ export type Database = {
       profiles: {
         Row: {
           agency_id: string | null
+          avatar_url: string | null
+          bio: string | null
           created_at: string
           display_name: string | null
           email: string | null
           full_name: string | null
           id: string
+          last_seen_at: string | null
           phone: string | null
+          status: string | null
           updated_at: string
           user_id: string | null
         }
         Insert: {
           agency_id?: string | null
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           full_name?: string | null
           id: string
+          last_seen_at?: string | null
           phone?: string | null
+          status?: string | null
           updated_at?: string
           user_id?: string | null
         }
         Update: {
           agency_id?: string | null
+          avatar_url?: string | null
+          bio?: string | null
           created_at?: string
           display_name?: string | null
           email?: string | null
           full_name?: string | null
           id?: string
+          last_seen_at?: string | null
           phone?: string | null
+          status?: string | null
           updated_at?: string
           user_id?: string | null
         }
@@ -807,6 +819,53 @@ export type Database = {
           },
         ]
       }
+      user_activity_logs: {
+        Row: {
+          action: string
+          agency_id: string
+          created_at: string
+          details: Json | null
+          id: string
+          ip_address: unknown | null
+          resource_id: string | null
+          resource_type: string | null
+          user_agent: string | null
+          user_id: string
+        }
+        Insert: {
+          action: string
+          agency_id: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id: string
+        }
+        Update: {
+          action?: string
+          agency_id?: string
+          created_at?: string
+          details?: Json | null
+          id?: string
+          ip_address?: unknown | null
+          resource_id?: string | null
+          resource_type?: string | null
+          user_agent?: string | null
+          user_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_activity_logs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       user_invitations: {
         Row: {
           accepted_at: string | null
@@ -818,6 +877,8 @@ export type Database = {
           id: string
           invite_token: string
           invited_by: string
+          last_resent_at: string | null
+          resent_count: number | null
           role: string
         }
         Insert: {
@@ -830,6 +891,8 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by: string
+          last_resent_at?: string | null
+          resent_count?: number | null
           role: string
         }
         Update: {
@@ -842,6 +905,8 @@ export type Database = {
           id?: string
           invite_token?: string
           invited_by?: string
+          last_resent_at?: string | null
+          resent_count?: number | null
           role?: string
         }
         Relationships: [
@@ -942,11 +1007,24 @@ export type Database = {
         Args: { aid: string }
         Returns: boolean
       }
+      log_user_activity: {
+        Args: {
+          p_action: string
+          p_details?: Json
+          p_resource_id?: string
+          p_resource_type?: string
+        }
+        Returns: string
+      }
       refresh_campaign_performance: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
       refresh_kpis: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
+      update_user_last_seen: {
         Args: Record<PropertyKey, never>
         Returns: undefined
       }
