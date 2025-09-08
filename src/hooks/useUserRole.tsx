@@ -68,7 +68,8 @@ export const useUserRole = () => {
   const canManageLeads = isOwner || isAdmin || isAgent;
   const canViewReports = isOwner || isAdmin || isManager;
   const canManageBilling = isOwner;
-  const canViewDashboard = userRole !== null;
+  const canViewDashboard = userRole !== null || loading; // Allow dashboard access while loading
+  const needsAgencySetup = !loading && user && !agencyId; // User exists but no agency
   const isReadOnly = isManager;
 
   return {
@@ -85,6 +86,7 @@ export const useUserRole = () => {
     canViewReports,
     canManageBilling,
     canViewDashboard,
+    needsAgencySetup,
     isReadOnly,
     loading
   };

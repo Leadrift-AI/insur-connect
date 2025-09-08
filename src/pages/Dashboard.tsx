@@ -8,6 +8,7 @@ import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import LeadsTable from '@/components/dashboard/LeadsTable';
 import { ReadOnlyDashboard } from '@/components/dashboard/ReadOnlyDashboard';
+import { AgencySetup } from '@/components/onboarding/AgencySetup';
 import { Loader2 } from 'lucide-react';
 
 interface DashboardData {
@@ -25,15 +26,15 @@ interface DashboardData {
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
-  const { isReadOnly, loading: roleLoading, canViewDashboard } = useUserRole();
+  const { isReadOnly, loading: roleLoading, canViewDashboard, needsAgencySetup } = useUserRole();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user && !isReadOnly) {
+    if (user && !isReadOnly && !needsAgencySetup) {
       fetchDashboardData();
     }
-  }, [user, isReadOnly]);
+  }, [user, isReadOnly, needsAgencySetup]);
 
   const fetchDashboardData = async () => {
     try {
@@ -109,7 +110,7 @@ const Dashboard = () => {
     }
   };
 
-  if (authLoading || roleLoading || loading) {
+  if (authLoading || roleLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -117,8 +118,13 @@ const Dashboard = () => {
     );
   }
 
-  if (!user || !canViewDashboard) {
+  if (!user) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show agency setup for authenticated users without agencies
+  if (needsAgencySetup) {
+    return <AgencySetup onComplete={() => window.location.reload()} />;
   }
 
   // Show read-only dashboard for managers
@@ -130,7 +136,7 @@ const Dashboard = () => {
     );
   }
 
-  if (!data) {
+  if (!data && !needsAgencySetup) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <div className="text-center">
