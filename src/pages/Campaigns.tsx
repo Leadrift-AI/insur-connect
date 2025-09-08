@@ -8,22 +8,27 @@ import DashboardLayout from '@/components/layout/DashboardLayout';
 import { CreateCampaignDialog } from '@/components/campaigns/CreateCampaignDialog';
 import { CampaignsList } from '@/components/campaigns/CampaignsList';
 import { CampaignPerformance } from '@/components/campaigns/CampaignPerformance';
+import { CampaignAnalytics } from '@/components/campaigns/CampaignAnalytics';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
 const Campaigns: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const {
-    toast
-  } = useToast();
-  const {
-    canManageCampaigns
-  } = useUserRole();
+  const [duplicateCampaign, setDuplicateCampaign] = useState<any>(null);
+  const { toast } = useToast();
+  const { canManageCampaigns } = useUserRole();
+  
   const handleCampaignCreated = () => {
     setIsCreateDialogOpen(false);
+    setDuplicateCampaign(null);
     toast({
       title: "Campaign Created",
       description: "Your campaign has been created successfully."
     });
+  };
+
+  const handleDuplicateCampaign = (campaign: any) => {
+    setDuplicateCampaign(campaign);
+    setIsCreateDialogOpen(true);
   };
   return <DashboardLayout>
       <div className="container mx-auto p-6 space-y-6">
@@ -61,7 +66,7 @@ const Campaigns: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">1,234</div>
-              <p className="text-xs text-muted-foregreen">+15% from last month</p>
+              <p className="text-xs text-muted-foreground">+15% from last month</p>
             </CardContent>
           </Card>
 
@@ -90,14 +95,19 @@ const Campaigns: React.FC = () => {
 
         {/* Main Content Tabs */}
         <Tabs defaultValue="campaigns" className="space-y-4">
-          <TabsList className="grid w-full grid-cols-3">
+          <TabsList className="grid w-full grid-cols-4">
             <TabsTrigger value="campaigns">All Campaigns</TabsTrigger>
+            <TabsTrigger value="analytics">Analytics</TabsTrigger>
             <TabsTrigger value="performance">Performance</TabsTrigger>
             <TabsTrigger value="sources">Lead Sources</TabsTrigger>
           </TabsList>
 
           <TabsContent value="campaigns" className="space-y-4">
-            <CampaignsList />
+            <CampaignsList onDuplicateCampaign={handleDuplicateCampaign} />
+          </TabsContent>
+
+          <TabsContent value="analytics" className="space-y-4">
+            <CampaignAnalytics />
           </TabsContent>
 
           <TabsContent value="performance" className="space-y-4">
@@ -148,7 +158,15 @@ const Campaigns: React.FC = () => {
         </Tabs>
 
         {/* Create Campaign Dialog */}
-        <CreateCampaignDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onCampaignCreated={handleCampaignCreated} />
+        <CreateCampaignDialog 
+          open={isCreateDialogOpen} 
+          onOpenChange={(open) => {
+            setIsCreateDialogOpen(open);
+            if (!open) setDuplicateCampaign(null);
+          }} 
+          onCampaignCreated={handleCampaignCreated}
+          duplicateCampaign={duplicateCampaign}
+        />
       </div>
     </DashboardLayout>;
 };
