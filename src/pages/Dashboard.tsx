@@ -1,11 +1,13 @@
 import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
+import { useUserRole } from '@/hooks/useUserRole';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import LeadsTable from '@/components/dashboard/LeadsTable';
+import { ReadOnlyDashboard } from '@/components/dashboard/ReadOnlyDashboard';
 import { Loader2 } from 'lucide-react';
 
 interface DashboardData {
@@ -23,14 +25,15 @@ interface DashboardData {
 
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
+  const { isReadOnly, loading: roleLoading, canViewDashboard } = useUserRole();
   const [data, setData] = useState<DashboardData | null>(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
-    if (user) {
+    if (user && !isReadOnly) {
       fetchDashboardData();
     }
-  }, [user]);
+  }, [user, isReadOnly]);
 
   const fetchDashboardData = async () => {
     try {
@@ -106,7 +109,7 @@ const Dashboard = () => {
     }
   };
 
-  if (authLoading || loading) {
+  if (authLoading || roleLoading || loading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin text-primary" />
@@ -114,8 +117,17 @@ const Dashboard = () => {
     );
   }
 
-  if (!user) {
+  if (!user || !canViewDashboard) {
     return <Navigate to="/auth" replace />;
+  }
+
+  // Show read-only dashboard for managers
+  if (isReadOnly) {
+    return (
+      <DashboardLayout>
+        <ReadOnlyDashboard />
+      </DashboardLayout>
+    );
   }
 
   if (!data) {

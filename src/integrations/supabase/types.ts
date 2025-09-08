@@ -807,6 +807,53 @@ export type Database = {
           },
         ]
       }
+      user_invitations: {
+        Row: {
+          accepted_at: string | null
+          accepted_by: string | null
+          agency_id: string
+          created_at: string
+          email: string
+          expires_at: string
+          id: string
+          invite_token: string
+          invited_by: string
+          role: string
+        }
+        Insert: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agency_id: string
+          created_at?: string
+          email: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by: string
+          role: string
+        }
+        Update: {
+          accepted_at?: string | null
+          accepted_by?: string | null
+          agency_id?: string
+          created_at?: string
+          email?: string
+          expires_at?: string
+          id?: string
+          invite_token?: string
+          invited_by?: string
+          role?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "user_invitations_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
     }
     Views: {
       mv_campaign_performance: {
@@ -871,6 +918,10 @@ export type Database = {
       }
     }
     Functions: {
+      accept_invitation: {
+        Args: { invitation_token: string }
+        Returns: Json
+      }
       change_lead_status: {
         Args: { p_lead: string; p_to: string }
         Returns: undefined
@@ -915,6 +966,7 @@ export type Database = {
     }
     Enums: {
       lead_status: "new" | "contacted" | "qualified" | "booked" | "closed"
+      user_role: "owner" | "admin" | "agent" | "staff" | "manager"
     }
     CompositeTypes: {
       [_ in never]: never
@@ -1043,6 +1095,7 @@ export const Constants = {
   public: {
     Enums: {
       lead_status: ["new", "contacted", "qualified", "booked", "closed"],
+      user_role: ["owner", "admin", "agent", "staff", "manager"],
     },
   },
 } as const

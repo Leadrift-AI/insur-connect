@@ -15,7 +15,8 @@ import {
   X
 } from 'lucide-react';
 import { useAuth } from '@/hooks/useAuth';
-import { useNavigate } from 'react-router-dom';
+import { useUserRole } from '@/hooks/useUserRole';
+import { useNavigate, Link } from 'react-router-dom';
 
 interface DashboardLayoutProps {
   children: React.ReactNode;
@@ -24,6 +25,7 @@ interface DashboardLayoutProps {
 const DashboardLayout = ({ children }: DashboardLayoutProps) => {
   const [sidebarOpen, setSidebarOpen] = useState(false);
   const { signOut, user } = useAuth();
+  const { canManageUsers } = useUserRole();
   const navigate = useNavigate();
 
   const handleSignOut = async () => {
@@ -33,15 +35,12 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
 
   const navigation = [
     { name: 'Dashboard', href: '/dashboard', icon: Home, current: true },
-    { name: 'Leads', href: '/leads', icon: Users, current: false },
     { name: 'Campaigns', href: '/campaigns', icon: Target, current: false },
     { name: 'Appointments', href: '/appointments', icon: Calendar, current: false },
-    { name: 'Calendar Settings', href: '/calendar-settings', icon: Settings, current: false },
     { name: 'Reports', href: '/reports', icon: BarChart3, current: false },
     { name: 'Billing', href: '/billing', icon: CreditCard, current: false },
-    { name: 'Policies', href: '/policies', icon: FileText, current: false },
-    { name: 'Goals', href: '/goals', icon: Target, current: false },
-    { name: 'Settings', href: '/settings', icon: Settings, current: false },
+    ...(canManageUsers ? [{ name: 'Team', href: '/users', icon: Users, current: false }] : []),
+    { name: 'Calendar Settings', href: '/calendar-settings', icon: Settings, current: false },
   ];
 
   return (
@@ -70,9 +69,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
             </div>
             <nav className="mt-4 px-4 space-y-2">
               {navigation.map((item) => (
-                <a
+                <Link
                   key={item.name}
-                  href={item.href}
+                  to={item.href}
                   className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                     item.current
                       ? 'bg-secondary text-secondary-foreground'
@@ -81,7 +80,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
                 >
                   <item.icon className="mr-3 h-5 w-5" />
                   {item.name}
-                </a>
+                </Link>
               ))}
             </nav>
             <div className="absolute bottom-4 left-4 right-4">
@@ -117,9 +116,9 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
           </div>
           <nav className="mt-4 flex-1 px-4 space-y-2">
             {navigation.map((item) => (
-              <a
+              <Link
                 key={item.name}
-                href={item.href}
+                to={item.href}
                 className={`flex items-center px-3 py-2 rounded-lg text-sm font-medium transition-colors ${
                   item.current
                     ? 'bg-secondary text-secondary-foreground'
@@ -128,7 +127,7 @@ const DashboardLayout = ({ children }: DashboardLayoutProps) => {
               >
                 <item.icon className="mr-3 h-5 w-5" />
                 {item.name}
-              </a>
+              </Link>
             ))}
           </nav>
           <div className="p-4 border-t border-border">
