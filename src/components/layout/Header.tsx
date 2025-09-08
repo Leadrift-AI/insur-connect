@@ -21,17 +21,33 @@ const Header = () => {
         </div>
 
         {/* Desktop Navigation */}
-        <nav className="hidden md:flex items-center space-x-8">
-          <a href="#features" className="text-foreground hover:text-accent transition-smooth">
+        <nav className="hidden md:flex items-center space-x-8" role="navigation" aria-label="Main navigation">
+          <a 
+            href="#features" 
+            className="text-foreground hover:text-accent transition-smooth relative py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+            aria-label="View features section"
+          >
             Features
           </a>
-          <a href="#pricing" className="text-foreground hover:text-accent transition-smooth">
+          <a 
+            href="#pricing" 
+            className="text-foreground hover:text-accent transition-smooth relative py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+            aria-label="View pricing information"
+          >
             Pricing
           </a>
-          <a href="#about" className="text-foreground hover:text-accent transition-smooth">
+          <a 
+            href="#about" 
+            className="text-foreground hover:text-accent transition-smooth relative py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+            aria-label="Learn about us"
+          >
             About
           </a>
-          <a href="#contact" className="text-foreground hover:text-accent transition-smooth">
+          <a 
+            href="#contact" 
+            className="text-foreground hover:text-accent transition-smooth relative py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+            aria-label="Contact us"
+          >
             Contact
           </a>
         </nav>
@@ -56,9 +72,11 @@ const Header = () => {
 
         {/* Mobile Menu Button */}
         <button
-          className="md:hidden p-2 rounded-lg hover:bg-muted transition-smooth"
+          className="md:hidden p-2 rounded-lg hover:bg-muted transition-smooth focus:outline-none focus:ring-2 focus:ring-accent/50"
           onClick={() => setIsMenuOpen(!isMenuOpen)}
-          aria-label="Toggle menu"
+          aria-label={isMenuOpen ? "Close navigation menu" : "Open navigation menu"}
+          aria-expanded={isMenuOpen}
+          aria-controls="mobile-menu"
         >
           {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
         </button>
@@ -66,19 +84,42 @@ const Header = () => {
 
       {/* Mobile Menu */}
       {isMenuOpen && (
-        <div className="md:hidden bg-white border-t border-border shadow-card">
+        <div 
+          id="mobile-menu"
+          className="md:hidden bg-white border-t border-border shadow-card animate-fade-in"
+        >
           <div className="container mx-auto px-4 py-4 space-y-4">
-            <nav className="flex flex-col space-y-4">
-              <a href="#features" className="text-foreground hover:text-accent transition-smooth">
+            <nav className="flex flex-col space-y-4" role="navigation" aria-label="Mobile navigation">
+              <a 
+                href="#features" 
+                className="text-foreground hover:text-accent transition-smooth py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="View features section"
+              >
                 Features
               </a>
-              <a href="#pricing" className="text-foreground hover:text-accent transition-smooth">
+              <a 
+                href="#pricing" 
+                className="text-foreground hover:text-accent transition-smooth py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="View pricing information"
+              >
                 Pricing
               </a>
-              <a href="#about" className="text-foreground hover:text-accent transition-smooth">
+              <a 
+                href="#about" 
+                className="text-foreground hover:text-accent transition-smooth py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Learn about us"
+              >
                 About
               </a>
-              <a href="#contact" className="text-foreground hover:text-accent transition-smooth">
+              <a 
+                href="#contact" 
+                className="text-foreground hover:text-accent transition-smooth py-2 focus:outline-none focus:ring-2 focus:ring-accent/50 rounded"
+                onClick={() => setIsMenuOpen(false)}
+                aria-label="Contact us"
+              >
                 Contact
               </a>
             </nav>

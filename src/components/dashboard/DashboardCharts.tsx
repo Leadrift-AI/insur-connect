@@ -1,5 +1,8 @@
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, ResponsiveContainer, FunnelChart, Funnel, Cell } from 'recharts';
+import { ChartSkeleton } from '@/components/ui/loading-skeleton';
+import { EmptyState } from '@/components/ui/empty-state';
+import { BarChart3, TrendingUp } from 'lucide-react';
 
 interface FunnelData {
   total: number;
@@ -13,9 +16,11 @@ interface FunnelData {
 
 interface DashboardChartsProps {
   funnelData: FunnelData | null;
+  loading?: boolean;
+  error?: string;
 }
 
-const DashboardCharts = ({ funnelData }: DashboardChartsProps) => {
+const DashboardCharts = ({ funnelData, loading = false, error }: DashboardChartsProps) => {
   // Mock data for appointments trend - in real app this would come from props
   const appointmentTrend = [
     { name: 'Mon', appointments: 12 },
@@ -36,44 +41,94 @@ const DashboardCharts = ({ funnelData }: DashboardChartsProps) => {
     { name: 'Policies Sold', value: funnelData.won_count, fill: '#F9FAFB' }
   ] : [];
 
+  if (loading) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <ChartSkeleton />
+        <ChartSkeleton />
+      </div>
+    );
+  }
+
+  if (error) {
+    return (
+      <div className="grid gap-4 md:grid-cols-2">
+        <Card className="animate-fade-in">
+          <CardContent className="p-6">
+            <EmptyState
+              icon={BarChart3}
+              title="Failed to load chart data"
+              description={error}
+            />
+          </CardContent>
+        </Card>
+        <Card className="animate-fade-in">
+          <CardContent className="p-6">
+            <EmptyState
+              icon={TrendingUp}
+              title="Failed to load chart data"
+              description={error}
+            />
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
+
   return (
     <div className="grid gap-4 md:grid-cols-2">
-      <Card>
+      <Card className="animate-fade-in group hover:shadow-elegant transition-all duration-300">
         <CardHeader>
-          <CardTitle>Lead Funnel</CardTitle>
+          <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+            <BarChart3 className="h-5 w-5" />
+            Lead Funnel
+          </CardTitle>
           <CardDescription>
             Conversion rates through your sales pipeline
           </CardDescription>
         </CardHeader>
         <CardContent>
-          <ResponsiveContainer width="100%" height={300}>
-            <FunnelChart>
-              <Tooltip 
-                formatter={(value: number) => [value, 'Leads']}
-                labelStyle={{ color: '#0A2540' }}
-                contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
-                }}
-              />
-              <Funnel
-                dataKey="value"
-                data={funnelChartData}
-                isAnimationActive
-              >
-                {funnelChartData.map((entry, index) => (
-                  <Cell key={`cell-${index}`} fill={entry.fill} />
-                ))}
-              </Funnel>
-            </FunnelChart>
-          </ResponsiveContainer>
+          {funnelChartData.length === 0 ? (
+            <EmptyState
+              icon={BarChart3}
+              title="No funnel data available"
+              description="Start adding leads to see your conversion funnel"
+            />
+          ) : (
+            <ResponsiveContainer width="100%" height={300}>
+              <FunnelChart>
+                <Tooltip 
+                  formatter={(value: number) => [value, 'Leads']}
+                  labelStyle={{ color: 'hsl(var(--foreground))' }}
+                  contentStyle={{ 
+                    backgroundColor: 'hsl(var(--background))', 
+                    border: '1px solid hsl(var(--border))',
+                    borderRadius: '8px',
+                    boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
+                  }}
+                />
+                <Funnel
+                  dataKey="value"
+                  data={funnelChartData}
+                  isAnimationActive
+                  animationDuration={800}
+                >
+                  {funnelChartData.map((entry, index) => (
+                    <Cell key={`cell-${index}`} fill={entry.fill} />
+                  ))}
+                </Funnel>
+              </FunnelChart>
+            </ResponsiveContainer>
+          )}
         </CardContent>
       </Card>
 
-      <Card>
+      <Card className="animate-fade-in group hover:shadow-elegant transition-all duration-300" style={{ animationDelay: '0.1s' }}>
         <CardHeader>
-          <CardTitle>Weekly Appointments</CardTitle>
+          <CardTitle className="flex items-center gap-2 group-hover:text-primary transition-colors">
+            <TrendingUp className="h-5 w-5" />
+            Weekly Appointments
+          </CardTitle>
           <CardDescription>
             Appointments scheduled this week
           </CardDescription>
@@ -81,31 +136,34 @@ const DashboardCharts = ({ funnelData }: DashboardChartsProps) => {
         <CardContent>
           <ResponsiveContainer width="100%" height={300}>
             <BarChart data={appointmentTrend}>
-              <CartesianGrid strokeDasharray="3 3" stroke="#f1f5f9" />
+              <CartesianGrid strokeDasharray="3 3" stroke="hsl(var(--muted))" />
               <XAxis 
                 dataKey="name" 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#64748b', fontSize: 12 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               />
               <YAxis 
                 axisLine={false}
                 tickLine={false}
-                tick={{ fill: '#64748b', fontSize: 12 }}
+                tick={{ fill: 'hsl(var(--muted-foreground))', fontSize: 12 }}
               />
               <Tooltip 
                 formatter={(value: number) => [value, 'Appointments']}
-                labelStyle={{ color: '#0A2540' }}
+                labelStyle={{ color: 'hsl(var(--foreground))' }}
                 contentStyle={{ 
-                  backgroundColor: 'white', 
-                  border: '1px solid #e2e8f0',
-                  borderRadius: '8px'
+                  backgroundColor: 'hsl(var(--background))', 
+                  border: '1px solid hsl(var(--border))',
+                  borderRadius: '8px',
+                  boxShadow: '0 4px 6px -1px rgba(0, 0, 0, 0.1)'
                 }}
+                cursor={{ fill: 'hsl(var(--muted))', opacity: 0.5 }}
               />
               <Bar 
                 dataKey="appointments" 
-                fill="#0072F5"
+                fill="hsl(var(--primary))"
                 radius={[4, 4, 0, 0]}
+                className="hover:opacity-80 transition-opacity"
               />
             </BarChart>
           </ResponsiveContainer>
