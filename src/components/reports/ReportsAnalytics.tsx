@@ -19,7 +19,8 @@ import {
   Calendar,
   BarChart3,
   PieChart,
-  LineChart
+  LineChart,
+  Plus
 } from 'lucide-react';
 import { 
   AreaChart, 
@@ -41,6 +42,8 @@ import {
 import { ChartContainer, ChartTooltip, ChartTooltipContent } from '@/components/ui/chart';
 import { supabase } from '@/integrations/supabase/client';
 import { useToast } from '@/hooks/use-toast';
+import jsPDF from 'jspdf';
+import autoTable from 'jspdf-autotable';
 
 interface ReportsData {
   roas: number;
@@ -208,11 +211,66 @@ export const ReportsAnalytics: React.FC = () => {
   };
 
   const exportToPDF = () => {
-    toast({
-      title: 'Export Started',
-      description: 'PDF report is being generated...',
+    if (!reportsData) return;
+    
+    // Create PDF document
+    const doc = new jsPDF();
+    
+    // Add title
+    doc.setFontSize(20);
+    doc.text('Agency Performance Report', 20, 20);
+    
+    // Add metadata
+    doc.setFontSize(12);
+    doc.text(`Time Period: ${timeRange.charAt(0).toUpperCase() + timeRange.slice(1)}`, 20, 35);
+    doc.text(`Generated: ${new Date().toLocaleDateString()}`, 20, 45);
+    
+    // Add KPI section
+    doc.setFontSize(14);
+    doc.text('Key Performance Indicators', 20, 65);
+    
+    const kpiData = [
+      ['ROAS', `${reportsData.roas.toFixed(1)}x`],
+      ['Total Revenue', `$${reportsData.totalRevenue.toLocaleString()}`],
+      ['Conversion Rate', `${reportsData.conversionRate}%`],
+      ['Total Policies', reportsData.totalPolicies.toString()]
+    ];
+    
+    autoTable(doc, {
+      head: [['Metric', 'Value']],
+      body: kpiData,
+      startY: 75,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] }
     });
-    // Implementation would use a library like jsPDF or html2canvas
+    
+    // Add agent performance section
+    doc.setFontSize(14);
+    doc.text('Agent Performance', 20, (doc as any).lastAutoTable.finalY + 20);
+    
+    const agentData = reportsData.agentPerformance.map(agent => [
+      agent.name,
+      agent.leads.toString(),
+      agent.policies.toString(),
+      `$${agent.revenue.toLocaleString()}`,
+      `${agent.conversionRate.toFixed(1)}%`
+    ]);
+    
+    autoTable(doc, {
+      head: [['Agent', 'Leads', 'Policies', 'Revenue', 'Conversion Rate']],
+      body: agentData,
+      startY: (doc as any).lastAutoTable.finalY + 30,
+      theme: 'striped',
+      headStyles: { fillColor: [59, 130, 246] }
+    });
+    
+    // Save the PDF
+    doc.save(`agency-report-${timeRange}-${new Date().toISOString().split('T')[0]}.pdf`);
+    
+    toast({
+      title: 'Export Complete',
+      description: 'PDF report has been downloaded',
+    });
   };
 
   const exportToCSV = () => {
