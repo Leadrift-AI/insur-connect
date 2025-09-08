@@ -10,40 +10,35 @@ import { CampaignsList } from '@/components/campaigns/CampaignsList';
 import { CampaignPerformance } from '@/components/campaigns/CampaignPerformance';
 import { useToast } from '@/hooks/use-toast';
 import { useUserRole } from '@/hooks/useUserRole';
-
 const Campaigns: React.FC = () => {
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
-  const { toast } = useToast();
-  const { canManageCampaigns } = useUserRole();
-
+  const {
+    toast
+  } = useToast();
+  const {
+    canManageCampaigns
+  } = useUserRole();
   const handleCampaignCreated = () => {
     setIsCreateDialogOpen(false);
     toast({
       title: "Campaign Created",
-      description: "Your campaign has been created successfully.",
+      description: "Your campaign has been created successfully."
     });
   };
-
-  return (
-    <DashboardLayout>
+  return <DashboardLayout>
       <div className="container mx-auto p-6 space-y-6">
         {/* Header */}
         <div className="flex justify-between items-center">
           <div>
-            <h1 className="text-3xl font-bold">Campaign Builder</h1>
+            <h1 className="text-3xl font-bold">Campaign Results</h1>
             <p className="text-muted-foreground mt-2">
-              {canManageCampaigns 
-                ? "Create and track your marketing campaigns across multiple channels"
-                : "View campaign analytics and performance data"
-              }
+              {canManageCampaigns ? "Create and track your marketing campaigns across multiple channels" : "View campaign analytics and performance data"}
             </p>
           </div>
-          {canManageCampaigns && (
-            <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
+          {canManageCampaigns && <Button onClick={() => setIsCreateDialogOpen(true)} className="gap-2">
               <Plus className="h-4 w-4" />
               Create Campaign
-            </Button>
-          )}
+            </Button>}
         </div>
 
         {/* Campaign Overview Cards */}
@@ -119,21 +114,33 @@ const Campaigns: React.FC = () => {
               </CardHeader>
               <CardContent>
                 <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
-                  {[
-                    { source: 'Facebook Ads', leads: 456, color: 'bg-blue-500' },
-                    { source: 'Google Ads', leads: 321, color: 'bg-green-500' },
-                    { source: 'LinkedIn', leads: 123, color: 'bg-blue-600' },
-                    { source: 'Website', leads: 234, color: 'bg-purple-500' },
-                    { source: 'Referrals', leads: 100, color: 'bg-orange-500' },
-                  ].map((item) => (
-                    <div key={item.source} className="text-center">
+                  {[{
+                  source: 'Facebook Ads',
+                  leads: 456,
+                  color: 'bg-blue-500'
+                }, {
+                  source: 'Google Ads',
+                  leads: 321,
+                  color: 'bg-green-500'
+                }, {
+                  source: 'LinkedIn',
+                  leads: 123,
+                  color: 'bg-blue-600'
+                }, {
+                  source: 'Website',
+                  leads: 234,
+                  color: 'bg-purple-500'
+                }, {
+                  source: 'Referrals',
+                  leads: 100,
+                  color: 'bg-orange-500'
+                }].map(item => <div key={item.source} className="text-center">
                       <div className={`w-12 h-12 ${item.color} rounded-full mx-auto mb-2 flex items-center justify-center text-white font-bold`}>
                         {item.leads}
                       </div>
                       <h3 className="font-medium">{item.source}</h3>
                       <p className="text-sm text-muted-foreground">leads</p>
-                    </div>
-                  ))}
+                    </div>)}
                 </div>
               </CardContent>
             </Card>
@@ -141,14 +148,8 @@ const Campaigns: React.FC = () => {
         </Tabs>
 
         {/* Create Campaign Dialog */}
-        <CreateCampaignDialog
-          open={isCreateDialogOpen}
-          onOpenChange={setIsCreateDialogOpen}
-          onCampaignCreated={handleCampaignCreated}
-        />
+        <CreateCampaignDialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen} onCampaignCreated={handleCampaignCreated} />
       </div>
-    </DashboardLayout>
-  );
+    </DashboardLayout>;
 };
-
 export default Campaigns;
