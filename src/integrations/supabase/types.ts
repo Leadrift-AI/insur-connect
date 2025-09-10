@@ -469,13 +469,18 @@ export type Database = {
       leads: {
         Row: {
           agency_id: string
+          assigned_agent_id: string | null
           campaign_id: string | null
           created_at: string
           email: string | null
+          first_name: string | null
           full_name: string | null
           id: string
           landing_page: string | null
+          last_name: string | null
+          notes: string | null
           phone: string | null
+          priority: string | null
           referrer_url: string | null
           source: string | null
           source_details: Json | null
@@ -489,13 +494,18 @@ export type Database = {
         }
         Insert: {
           agency_id: string
+          assigned_agent_id?: string | null
           campaign_id?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           landing_page?: string | null
+          last_name?: string | null
+          notes?: string | null
           phone?: string | null
+          priority?: string | null
           referrer_url?: string | null
           source?: string | null
           source_details?: Json | null
@@ -509,13 +519,18 @@ export type Database = {
         }
         Update: {
           agency_id?: string
+          assigned_agent_id?: string | null
           campaign_id?: string | null
           created_at?: string
           email?: string | null
+          first_name?: string | null
           full_name?: string | null
           id?: string
           landing_page?: string | null
+          last_name?: string | null
+          notes?: string | null
           phone?: string | null
+          priority?: string | null
           referrer_url?: string | null
           source?: string | null
           source_details?: Json | null
@@ -626,6 +641,59 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      policies: {
+        Row: {
+          agency_id: string
+          commission_amount: number
+          created_at: string
+          created_by: string
+          effective_date: string | null
+          id: string
+          lead_id: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount: number
+          status: string
+          updated_at: string
+        }
+        Insert: {
+          agency_id: string
+          commission_amount?: number
+          created_at?: string
+          created_by?: string
+          effective_date?: string | null
+          id?: string
+          lead_id?: string | null
+          policy_number: string
+          policy_type: string
+          premium_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Update: {
+          agency_id?: string
+          commission_amount?: number
+          created_at?: string
+          created_by?: string
+          effective_date?: string | null
+          id?: string
+          lead_id?: string | null
+          policy_number?: string
+          policy_type?: string
+          premium_amount?: number
+          status?: string
+          updated_at?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "policies_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]

@@ -1,6 +1,6 @@
 import React from 'react';
 import DashboardLayout from '@/components/layout/DashboardLayout';
-import { ReportsAnalytics } from '@/components/reports/ReportsAnalytics';
+import { ReportsAnalytics } from '@/components/reports/ReportsAnalyticsSimple';
 
 export default function Reports() {
   return (
