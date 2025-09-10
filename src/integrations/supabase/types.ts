@@ -1503,6 +1503,10 @@ export type Database = {
         }
         Returns: string
       }
+      refresh_agent_performance: {
+        Args: Record<PropertyKey, never>
+        Returns: undefined
+      }
       refresh_campaign_performance: {
         Args: Record<PropertyKey, never>
         Returns: undefined
