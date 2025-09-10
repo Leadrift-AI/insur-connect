@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import { Navigate } from 'react-router-dom';
 import { useAuth } from '@/hooks/useAuth';
 import { useUserRole } from '@/hooks/useUserRole';
-import { useKPIData } from '@/hooks/useKPIData';
+import { useRealtimeKPIs } from '@/hooks/useRealtimeKPIs';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
@@ -28,7 +28,7 @@ interface DashboardData {
 const Dashboard = () => {
   const { user, loading: authLoading } = useAuth();
   const { isReadOnly, loading: roleLoading, canViewDashboard, needsAgencySetup } = useUserRole();
-  const { data: kpiData, loading: kpiLoading, refetch: refetchKPIs } = useKPIData();
+  const { data: kpiData, loading: kpiLoading, refetch: refetchKPIs } = useRealtimeKPIs();
   const [funnelData, setFunnelData] = useState<any>(null);
   const [leads, setLeads] = useState<any[]>([]);
 

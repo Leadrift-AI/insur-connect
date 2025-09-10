@@ -21,7 +21,10 @@ export type Database = {
           id: string
           name: string
           owner_user_id: string
+          plan: string | null
+          seats: number | null
           stripe_customer_id: string | null
+          stripe_subscription_id: string | null
         }
         Insert: {
           created_at?: string
@@ -29,7 +32,10 @@ export type Database = {
           id?: string
           name: string
           owner_user_id: string
+          plan?: string | null
+          seats?: number | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
         }
         Update: {
           created_at?: string
@@ -37,7 +43,10 @@ export type Database = {
           id?: string
           name?: string
           owner_user_id?: string
+          plan?: string | null
+          seats?: number | null
           stripe_customer_id?: string | null
+          stripe_subscription_id?: string | null
         }
         Relationships: []
       }
@@ -173,6 +182,7 @@ export type Database = {
           agency_id: string
           calendar_event_id: string | null
           created_at: string
+          google_event_id: string | null
           id: string
           lead_id: string | null
           notes: string | null
@@ -184,6 +194,7 @@ export type Database = {
           agency_id: string
           calendar_event_id?: string | null
           created_at?: string
+          google_event_id?: string | null
           id?: string
           lead_id?: string | null
           notes?: string | null
@@ -195,6 +206,7 @@ export type Database = {
           agency_id?: string
           calendar_event_id?: string | null
           created_at?: string
+          google_event_id?: string | null
           id?: string
           lead_id?: string | null
           notes?: string | null
@@ -1074,6 +1086,20 @@ export type Database = {
       is_member: {
         Args: { aid: string }
         Returns: boolean
+      }
+      kpis_for_range: {
+        Args: { aid: string; from_ts: string; to_ts: string }
+        Returns: {
+          appointments: number
+          average_deal_size: number
+          campaign_spend: number
+          commissions: number
+          conversion_rate: number
+          new_leads: number
+          policies_sold: number
+          roas: number
+          total_revenue: number
+        }[]
       }
       log_user_activity: {
         Args: {

@@ -33,80 +33,28 @@ export const useKPIData = (dateRange: { from?: Date; to?: Date } = {}) => {
       const fromDate = dateRange.from || new Date(Date.now() - 30 * 24 * 60 * 60 * 1000);
       const toDate = dateRange.to || new Date();
 
-      // Fetch leads data
-      const { data: leads, error: leadsError } = await supabase
-        .from('leads')
-        .select('*')
-        .eq('agency_id', agencyId)
-        .gte('created_at', fromDate.toISOString())
-        .lte('created_at', toDate.toISOString());
+      // Use the efficient RPC function
+      const { data: kpiData, error } = await supabase.rpc('kpis_for_range', {
+        aid: agencyId,
+        from_ts: fromDate.toISOString(),
+        to_ts: toDate.toISOString()
+      });
 
-      if (leadsError) throw leadsError;
+      if (error) throw error;
+      if (!kpiData || kpiData.length === 0) throw new Error('No KPI data returned');
 
-      // Fetch appointments data
-      const { data: appointments, error: appointmentsError } = await supabase
-        .from('appointments')
-        .select('*')
-        .eq('agency_id', agencyId)
-        .gte('created_at', fromDate.toISOString())
-        .lte('created_at', toDate.toISOString());
-
-      if (appointmentsError) throw appointmentsError;
-
-      // Fetch policies data
-      const { data: policies, error: policiesError } = await supabase
-        .from('policies')
-        .select('*')
-        .eq('agency_id', agencyId)
-        .gte('created_at', fromDate.toISOString())
-        .lte('created_at', toDate.toISOString());
-
-      if (policiesError) throw policiesError;
-
-      // Fetch campaign data for spend calculation
-      const { data: campaigns, error: campaignsError } = await supabase
-        .from('campaigns')
-        .select('budget')
-        .eq('agency_id', agencyId)
-        .eq('status', 'active');
-
-      if (campaignsError) throw campaignsError;
-
-      // Calculate KPIs
-      const newLeads = leads?.filter(l => l.status === 'new').length || 0;
-      const totalAppointments = appointments?.length || 0;
-      const totalLeads = leads?.length || 0;
-      const conversionRate = totalLeads > 0 ? (totalAppointments / totalLeads) * 100 : 0;
+      const result = kpiData[0];
       
-      const activePolicies = policies?.filter(p => p.status === 'active') || [];
-      const policiesSold = activePolicies.length;
-      
-      const totalRevenue = activePolicies.reduce((sum, policy) => 
-        sum + (Number(policy.premium_amount) || 0), 0
-      );
-      
-      const commissions = activePolicies.reduce((sum, policy) => 
-        sum + (Number(policy.commission_amount) || 0), 0
-      );
-      
-      const averageDealSize = policiesSold > 0 ? totalRevenue / policiesSold : 0;
-      
-      const campaignSpend = campaigns?.reduce((sum, campaign) => 
-        sum + (Number(campaign.budget) || 0), 0
-      ) || 0;
-      
-      const roas = campaignSpend > 0 ? (totalRevenue / campaignSpend) : 0;
-
       setData({
-        newLeads,
-        appointments: totalAppointments,
-        conversionRate: Math.round(conversionRate),
-        policiesSold,
-        commissions: Math.round(commissions),
-        averageDealSize: Math.round(averageDealSize),
-        totalRevenue: Math.round(totalRevenue),
-        campaignSpend: Math.round(campaignSpend),
-        roas: Math.round(roas * 100) / 100
+        newLeads: result.new_leads || 0,
+        appointments: result.appointments || 0,
+        conversionRate: Number(result.conversion_rate) || 0,
+        policiesSold: result.policies_sold || 0,
+        commissions: Number(result.commissions) || 0,
+        averageDealSize: Number(result.average_deal_size) || 0,
+        totalRevenue: Number(result.total_revenue) || 0,
+        campaignSpend: Number(result.campaign_spend) || 0,
+        roas: Number(result.roas) || 0
       });
     } catch (err) {
       console.error('Error fetching KPI data:', err);

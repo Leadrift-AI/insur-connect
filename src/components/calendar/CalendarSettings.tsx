@@ -40,23 +40,55 @@ const CalendarSettings: React.FC = () => {
     }
   };
 
-  const handleConnectGoogle = async () => {
-    try {
-      const authUrl = await calendarService.initGoogleAuth();
-      window.open(authUrl, '_blank', 'width=600,height=700,scrollbars=yes,resizable=yes');
+  const handleConnectGoogle = () => {
+    const clientId = 'your-google-client-id'; // This would come from your environment
+    const redirectUri = `${window.location.origin}/auth/callback/google-calendar`;
+    const scope = 'https://www.googleapis.com/auth/calendar.events';
+    const responseType = 'code';
+    const accessType = 'offline';
+    const prompt = 'consent';
+
+    const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
+      `client_id=${clientId}&` +
+      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
+      `scope=${encodeURIComponent(scope)}&` +
+      `response_type=${responseType}&` +
+      `access_type=${accessType}&` +
+      `prompt=${prompt}`;
+
+    // Open in new window
+    const popup = window.open(authUrl, 'google-calendar-auth', 'width=500,height=600');
+    
+    // Listen for message from popup
+    const messageHandler = (event: MessageEvent) => {
+      if (event.origin !== window.location.origin) return;
       
-      toast({
-        title: "Authorization Required",
-        description: "Please complete the authorization in the new window",
-      });
-    } catch (error) {
-      console.error('Failed to initiate Google auth:', error);
-      toast({
-        title: "Error",
-        description: "Failed to connect to Google Calendar",
-        variant: "destructive",
-      });
-    }
+      if (event.data.type === 'GOOGLE_CALENDAR_SUCCESS') {
+        popup?.close();
+        toast({
+          title: 'Success',
+          description: 'Google Calendar connected successfully',
+        });
+        fetchIntegrations(); // Refresh the list
+      } else if (event.data.type === 'GOOGLE_CALENDAR_ERROR') {
+        popup?.close();
+        toast({
+          title: 'Connection Failed',
+          description: event.data.error || 'Failed to connect Google Calendar',
+          variant: 'destructive',
+        });
+      }
+    };
+
+    window.addEventListener('message', messageHandler);
+    
+    // Clean up listener when popup closes
+    const checkClosed = setInterval(() => {
+      if (popup?.closed) {
+        clearInterval(checkClosed);
+        window.removeEventListener('message', messageHandler);
+      }
+    }, 1000);
   };
 
   const handleToggleIntegration = async (integrationId: string, isActive: boolean) => {

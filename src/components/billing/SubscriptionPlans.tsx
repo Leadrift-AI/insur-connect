@@ -1,6 +1,7 @@
-import { useState, useEffect } from 'react';
+import { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
-import { useBilling } from '@/hooks/useBilling';
+import { useAuth } from '@/hooks/useAuth';
+import { useToast } from '@/hooks/use-toast';
 import { Button } from '@/components/ui/button';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -24,34 +25,118 @@ interface SubscriptionPlansProps {
 }
 
 const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPlansProps) => {
-  const [plans, setPlans] = useState<SubscriptionPlan[]>([]);
-  const [loading, setLoading] = useState(true);
+  const [loading] = useState(false);
   const [billingCycle, setBillingCycle] = useState<'monthly' | 'yearly'>('monthly');
-  const { createSubscription } = useBilling();
+  const { user } = useAuth();
+  const { toast } = useToast();
 
-  useEffect(() => {
-    fetchPlans();
-  }, []);
-
-  const fetchPlans = async () => {
-    try {
-      const { data } = await supabase
-        .from('subscription_plans')
-        .select('*')
-        .eq('is_active', true)
-        .order('price_monthly', { ascending: true });
-
-      setPlans(data || []);
-    } catch (error) {
-      console.error('Error fetching plans:', error);
-    } finally {
-      setLoading(false);
+  // Hardcoded plans matching the sprint requirements
+  const plans = [
+    {
+      id: 'free',
+      name: 'Free',
+      description: 'Perfect for getting started',
+      price_monthly: 0,
+      price_yearly: 0,
+      stripePriceId: '',
+      features: [
+        'Up to 50 leads/month',
+        'Basic reporting',
+        'Email support',
+        '1 user'
+      ]
+    },
+    {
+      id: 'starter',
+      name: 'Starter',
+      description: 'Great for small agencies',
+      price_monthly: 3000, // $30.00
+      price_yearly: 32400, // $324.00 (10% discount)
+      stripePriceId: 'price_starter_monthly',
+      popular: true,
+      features: [
+        'Up to 500 leads/month',
+        'Google Calendar sync',
+        'Advanced reporting', 
+        'CSV/PDF exports',
+        'Priority support',
+        'Up to 5 users'
+      ]
+    },
+    {
+      id: 'professional',
+      name: 'Professional', 
+      description: 'Best for growing agencies',
+      price_monthly: 5000, // $50.00
+      price_yearly: 54000, // $540.00 (10% discount)
+      stripePriceId: 'price_professional_monthly',
+      features: [
+        'Up to 2,000 leads/month',
+        'All Starter features',
+        'Custom integrations',
+        'Advanced analytics',
+        'API access',
+        'Up to 15 users'
+      ]
+    },
+    {
+      id: 'enterprise',
+      name: 'Enterprise',
+      description: 'For large scale operations',
+      price_monthly: 7000, // $70.00
+      price_yearly: 75600, // $756.00 (10% discount)
+      stripePriceId: 'price_enterprise_monthly',
+      features: [
+        'Unlimited leads',
+        'All Professional features',
+        'White-label options',
+        'Dedicated support',
+        'Custom onboarding',
+        'Unlimited users'
+      ]
     }
-  };
+  ];
 
-  const handleSubscribe = async (planId: string) => {
-    await createSubscription(planId, billingCycle);
-    onSubscribe();
+  const handleSubscribe = async (plan: any) => {
+    if (!user) {
+      toast({
+        title: 'Authentication Required',
+        description: 'Please sign in to subscribe to a plan',
+        variant: 'destructive',
+      });
+      return;
+    }
+
+    if (plan.id === 'free') {
+      toast({
+        title: 'Already on Free Plan',
+        description: 'You are already on the free plan',
+      });
+      return;
+    }
+
+    try {
+      const { data, error } = await supabase.functions.invoke('create-checkout', {
+        body: {
+          priceId: plan.stripePriceId,
+          planId: plan.id
+        }
+      });
+
+      if (error) throw error;
+
+      if (data?.url) {
+        // Open Stripe checkout in new tab
+        window.open(data.url, '_blank');
+      }
+    } catch (error) {
+      console.error('Error creating checkout session:', error);
+      toast({
+        title: 'Checkout Error',
+        description: 'Failed to create checkout session. Please try again.',
+        variant: 'destructive',
+      });
+    }
   };
 
   const formatPrice = (price: number) => {
