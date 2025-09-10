@@ -27,7 +27,7 @@ const HeroSection = () => {
               animationDelay: '0.2s'
             }}>
                 Free Your Agents From{" "}
-                <span className="gradient-primary bg-clip-text mx-0 animate-shimmer bg-[length:200%_100%] text-slate-950">
+                <span className="gradient-primary bg-clip-text mx-0 animate-shimmer bg-[length:200%_100%] text-transparent">
                   Busywork
                 </span>
               </h1>
