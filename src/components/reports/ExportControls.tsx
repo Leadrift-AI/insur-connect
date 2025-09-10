@@ -1,9 +1,12 @@
 import React from 'react';
 import { Button } from '@/components/ui/button';
-import { Download, FileText, Table } from 'lucide-react';
+import { Badge } from '@/components/ui/badge';
+import { Download, FileText, Table, Loader2 } from 'lucide-react';
 import { exportToCSV, exportToPDF } from '@/utils/exportHelpers';
 import { useAgency } from '@/hooks/useAgency';
 import { useToast } from '@/hooks/use-toast';
+import { usePlanGating } from '@/hooks/usePlanGating';
+import { useState } from 'react';
 
 interface ExportControlsProps {
   data: any[];
@@ -22,9 +25,24 @@ export const ExportControls = ({
 }: ExportControlsProps) => {
   const { agency } = useAgency();
   const { toast } = useToast();
+  const { requiresPaidPlan } = usePlanGating();
+  const [exporting, setExporting] = useState({ csv: false, pdf: false });
+  
+  const exportGating = requiresPaidPlan('export');
 
-  const handleCSVExport = () => {
+  const handleCSVExport = async () => {
+    if (!exportGating.allowed) {
+      toast({
+        title: 'Upgrade Required',
+        description: exportGating.upgradeMessage,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
+      setExporting({ csv: true, pdf: false });
+      
       if (!data || data.length === 0) {
         toast({
           title: 'No Data',
@@ -34,7 +52,7 @@ export const ExportControls = ({
         return;
       }
 
-      exportToCSV(data, filename, headers);
+      await exportToCSV(data, filename, headers);
       
       toast({
         title: 'Export Successful',
@@ -47,11 +65,24 @@ export const ExportControls = ({
         description: 'Failed to export CSV file',
         variant: 'destructive'
       });
+    } finally {
+      setExporting({ csv: false, pdf: false });
     }
   };
 
-  const handlePDFExport = () => {
+  const handlePDFExport = async () => {
+    if (!exportGating.allowed) {
+      toast({
+        title: 'Upgrade Required',
+        description: exportGating.upgradeMessage,
+        variant: 'destructive'
+      });
+      return;
+    }
+
     try {
+      setExporting({ csv: false, pdf: true });
+      
       if (!data || data.length === 0) {
         toast({
           title: 'No Data',
@@ -61,7 +92,7 @@ export const ExportControls = ({
         return;
       }
 
-      exportToPDF(data, title, filename, headers, agency?.name);
+      await exportToPDF(data, title, filename, headers, agency?.name);
       
       toast({
         title: 'Export Successful',
@@ -74,6 +105,8 @@ export const ExportControls = ({
         description: 'Failed to export PDF file',
         variant: 'destructive'
       });
+    } finally {
+      setExporting({ csv: false, pdf: false });
     }
   };
 
@@ -83,22 +116,32 @@ export const ExportControls = ({
         variant="outline"
         size="sm"
         onClick={handleCSVExport}
-        disabled={disabled || !data?.length}
+        disabled={disabled || !data?.length || exporting.csv || !exportGating.allowed}
         className="flex items-center gap-2"
       >
-        <Table className="h-4 w-4" />
+        {exporting.csv ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <Table className="h-4 w-4" />
+        )}
         Export CSV
+        {!exportGating.allowed && <Badge variant="secondary" className="ml-2">Pro</Badge>}
       </Button>
       
       <Button
         variant="outline"
         size="sm"
         onClick={handlePDFExport}
-        disabled={disabled || !data?.length}
+        disabled={disabled || !data?.length || exporting.pdf || !exportGating.allowed}
         className="flex items-center gap-2"
       >
-        <FileText className="h-4 w-4" />
+        {exporting.pdf ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <FileText className="h-4 w-4" />
+        )}
         Export PDF
+        {!exportGating.allowed && <Badge variant="secondary" className="ml-2">Pro</Badge>}
       </Button>
     </div>
   );

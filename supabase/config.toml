@@ -45,3 +45,15 @@ port = 54324
 
 [functions.calendar-oauth]
 verify_jwt = false
+
+[functions.calendar-sync]
+verify_jwt = true
+
+[functions.stripe-webhook] 
+verify_jwt = false
+
+[functions.create-checkout]
+verify_jwt = true
+
+[functions.google-calendar-oauth]
+verify_jwt = false
