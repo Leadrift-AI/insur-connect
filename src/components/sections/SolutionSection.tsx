@@ -43,7 +43,7 @@ const SolutionSection = () => {
           </div>
           <h2 className="text-3xl md:text-4xl font-montserrat font-bold text-primary mb-4">
             Your Complete Insurance Sales{" "}
-            <span className="gradient-primary bg-clip-text text-transparent mx-0">
+            <span className="gradient-primary bg-clip-text mx-0 text-slate-950">
               Automation Platform
             </span>
           </h2>
