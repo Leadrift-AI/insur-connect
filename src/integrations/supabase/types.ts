@@ -18,6 +18,7 @@ export type Database = {
         Row: {
           created_at: string
           created_by: string
+          demo_mode: boolean | null
           id: string
           name: string
           owner_user_id: string
@@ -29,6 +30,7 @@ export type Database = {
         Insert: {
           created_at?: string
           created_by: string
+          demo_mode?: boolean | null
           id?: string
           name: string
           owner_user_id: string
@@ -40,6 +42,7 @@ export type Database = {
         Update: {
           created_at?: string
           created_by?: string
+          demo_mode?: boolean | null
           id?: string
           name?: string
           owner_user_id?: string
@@ -231,6 +234,71 @@ export type Database = {
           },
         ]
       }
+      audit_log: {
+        Row: {
+          action: string
+          actor_id: string | null
+          agency_id: string
+          created_at: string | null
+          diff: Json | null
+          entity: string
+          entity_id: string | null
+          id: string
+          ip: unknown | null
+          user_agent: string | null
+        }
+        Insert: {
+          action: string
+          actor_id?: string | null
+          agency_id: string
+          created_at?: string | null
+          diff?: Json | null
+          entity: string
+          entity_id?: string | null
+          id?: string
+          ip?: unknown | null
+          user_agent?: string | null
+        }
+        Update: {
+          action?: string
+          actor_id?: string | null
+          agency_id?: string
+          created_at?: string | null
+          diff?: Json | null
+          entity?: string
+          entity_id?: string | null
+          id?: string
+          ip?: unknown | null
+          user_agent?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "audit_log_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      billing_events: {
+        Row: {
+          id: string
+          received_at: string | null
+          type: string
+        }
+        Insert: {
+          id: string
+          received_at?: string | null
+          type: string
+        }
+        Update: {
+          id?: string
+          received_at?: string | null
+          type?: string
+        }
+        Relationships: []
+      }
       calendar_integrations: {
         Row: {
           access_token: string
@@ -335,6 +403,50 @@ export type Database = {
           utm_term?: string | null
         }
         Relationships: []
+      }
+      import_jobs: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          error_rows: number | null
+          finished_at: string | null
+          id: string
+          log_url: string | null
+          status: string | null
+          success_rows: number | null
+          total_rows: number | null
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          error_rows?: number | null
+          finished_at?: string | null
+          id?: string
+          log_url?: string | null
+          status?: string | null
+          success_rows?: number | null
+          total_rows?: number | null
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          error_rows?: number | null
+          finished_at?: string | null
+          id?: string
+          log_url?: string | null
+          status?: string | null
+          success_rows?: number | null
+          total_rows?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "import_jobs_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       invoices: {
         Row: {
@@ -485,12 +597,15 @@ export type Database = {
           campaign_id: string | null
           created_at: string
           email: string | null
+          first_contacted_at: string | null
           first_name: string | null
           full_name: string | null
           id: string
           landing_page: string | null
           last_name: string | null
           notes: string | null
+          opted_out: boolean | null
+          owner_id: string | null
           phone: string | null
           priority: string | null
           referrer_url: string | null
@@ -510,12 +625,15 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string
           email?: string | null
+          first_contacted_at?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           landing_page?: string | null
           last_name?: string | null
           notes?: string | null
+          opted_out?: boolean | null
+          owner_id?: string | null
           phone?: string | null
           priority?: string | null
           referrer_url?: string | null
@@ -535,12 +653,15 @@ export type Database = {
           campaign_id?: string | null
           created_at?: string
           email?: string | null
+          first_contacted_at?: string | null
           first_name?: string | null
           full_name?: string | null
           id?: string
           landing_page?: string | null
           last_name?: string | null
           notes?: string | null
+          opted_out?: boolean | null
+          owner_id?: string | null
           phone?: string | null
           priority?: string | null
           referrer_url?: string | null
@@ -603,6 +724,104 @@ export type Database = {
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      message_templates: {
+        Row: {
+          agency_id: string
+          body: string
+          channel: string
+          created_at: string | null
+          id: string
+          name: string
+          subject: string | null
+        }
+        Insert: {
+          agency_id: string
+          body: string
+          channel: string
+          created_at?: string | null
+          id?: string
+          name: string
+          subject?: string | null
+        }
+        Update: {
+          agency_id?: string
+          body?: string
+          channel?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+          subject?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "message_templates_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      outbox: {
+        Row: {
+          agency_id: string
+          body: string
+          channel: string
+          error_message: string | null
+          id: string
+          lead_id: string
+          provider_message_id: string | null
+          scheduled_at: string
+          sent_at: string | null
+          status: string | null
+          subject: string | null
+          to_address: string
+        }
+        Insert: {
+          agency_id: string
+          body: string
+          channel: string
+          error_message?: string | null
+          id?: string
+          lead_id: string
+          provider_message_id?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_address: string
+        }
+        Update: {
+          agency_id?: string
+          body?: string
+          channel?: string
+          error_message?: string | null
+          id?: string
+          lead_id?: string
+          provider_message_id?: string | null
+          scheduled_at?: string
+          sent_at?: string | null
+          status?: string | null
+          subject?: string | null
+          to_address?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "outbox_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "outbox_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
             referencedColumns: ["id"]
           },
         ]
@@ -759,6 +978,157 @@ export type Database = {
         Relationships: [
           {
             foreignKeyName: "profiles_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      provider_credentials: {
+        Row: {
+          agency_id: string
+          created_at: string | null
+          encrypted_data: Json
+          id: string
+          provider: string
+        }
+        Insert: {
+          agency_id: string
+          created_at?: string | null
+          encrypted_data: Json
+          id?: string
+          provider: string
+        }
+        Update: {
+          agency_id?: string
+          created_at?: string | null
+          encrypted_data?: Json
+          id?: string
+          provider?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "provider_credentials_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sequence_enrollments: {
+        Row: {
+          current_step: number | null
+          enrolled_at: string | null
+          id: string
+          lead_id: string
+          next_send_at: string | null
+          sequence_id: string
+          status: string | null
+        }
+        Insert: {
+          current_step?: number | null
+          enrolled_at?: string | null
+          id?: string
+          lead_id: string
+          next_send_at?: string | null
+          sequence_id: string
+          status?: string | null
+        }
+        Update: {
+          current_step?: number | null
+          enrolled_at?: string | null
+          id?: string
+          lead_id?: string
+          next_send_at?: string | null
+          sequence_id?: string
+          status?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequence_enrollments_lead_id_fkey"
+            columns: ["lead_id"]
+            isOneToOne: false
+            referencedRelation: "leads"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_enrollments_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sequences"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sequence_steps: {
+        Row: {
+          delay_minutes: number
+          id: string
+          order_index: number
+          sequence_id: string
+          stop_on_status: string[] | null
+          template_id: string
+        }
+        Insert: {
+          delay_minutes: number
+          id?: string
+          order_index: number
+          sequence_id: string
+          stop_on_status?: string[] | null
+          template_id: string
+        }
+        Update: {
+          delay_minutes?: number
+          id?: string
+          order_index?: number
+          sequence_id?: string
+          stop_on_status?: string[] | null
+          template_id?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequence_steps_sequence_id_fkey"
+            columns: ["sequence_id"]
+            isOneToOne: false
+            referencedRelation: "sequences"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "sequence_steps_template_id_fkey"
+            columns: ["template_id"]
+            isOneToOne: false
+            referencedRelation: "message_templates"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      sequences: {
+        Row: {
+          active: boolean | null
+          agency_id: string
+          created_at: string | null
+          id: string
+          name: string
+        }
+        Insert: {
+          active?: boolean | null
+          agency_id: string
+          created_at?: string | null
+          id?: string
+          name: string
+        }
+        Update: {
+          active?: boolean | null
+          agency_id?: string
+          created_at?: string | null
+          id?: string
+          name?: string
+        }
+        Relationships: [
+          {
+            foreignKeyName: "sequences_agency_id_fkey"
             columns: ["agency_id"]
             isOneToOne: false
             referencedRelation: "agencies"
@@ -1001,6 +1371,29 @@ export type Database = {
       }
     }
     Views: {
+      mv_agent_performance: {
+        Row: {
+          agency_id: string | null
+          agent_id: string | null
+          appointments_completed: number | null
+          appointments_count: number | null
+          first_response_seconds: number | null
+          last_updated: string | null
+          leads_count: number | null
+          policies_count: number | null
+          total_commission: number | null
+          total_premium: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "leads_agency_id_fkey"
+            columns: ["agency_id"]
+            isOneToOne: false
+            referencedRelation: "agencies"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       mv_campaign_performance: {
         Row: {
           agency_id: string | null
