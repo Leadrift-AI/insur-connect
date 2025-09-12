@@ -33,20 +33,6 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
   // Hardcoded plans matching the sprint requirements
   const plans = [
     {
-      id: 'free',
-      name: 'Free',
-      description: 'Perfect for getting started',
-      price_monthly: 0,
-      price_yearly: 0,
-      stripePriceId: '',
-      features: [
-        'Up to 50 leads/month',
-        'Basic reporting',
-        'Email support',
-        '1 user'
-      ]
-    },
-    {
       id: 'starter',
       name: 'Starter',
       description: 'Great for small agencies',
@@ -107,13 +93,6 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
       return;
     }
 
-    if (plan.id === 'free') {
-      toast({
-        title: 'Already on Free Plan',
-        description: 'You are already on the free plan',
-      });
-      return;
-    }
 
     try {
       const { data, error } = await supabase.functions.invoke('create-checkout', {
@@ -207,8 +186,8 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
         <TabsContent value={billingCycle} className="mt-8">
           <div className="grid lg:grid-cols-3 gap-6">
             {plans.map((plan, index) => (
-              <Card key={plan.id} className={`relative border-2 ${getPlanVariant(plan.name)} ${index === 1 ? 'shadow-lg scale-105' : ''}`}>
-                {index === 1 && (
+              <Card key={plan.id} className={`relative border-2 ${getPlanVariant(plan.name)} ${index === 0 ? 'shadow-lg scale-105' : ''}`}>
+                {index === 0 && (
                   <div className="absolute -top-4 left-1/2 transform -translate-x-1/2">
                     <Badge className={`${getPlanBadgeColor(plan.name)} text-white px-3 py-1`}>
                       <Star className="w-3 h-3 mr-1" />
@@ -251,8 +230,8 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
                 <CardFooter>
                   <Button 
                     className="w-full"
-                    variant={index === 1 ? "default" : "outline"}
-                    onClick={() => handleSubscribe(plan.id)}
+                    variant={index === 0 ? "default" : "outline"}
+                    onClick={() => handleSubscribe(plan)}
                     disabled={currentSubscription?.plan_id === plan.id}
                   >
                     {currentSubscription?.plan_id === plan.id ? 'Current Plan' : `Get ${plan.name}`}
