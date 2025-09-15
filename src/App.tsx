@@ -17,6 +17,7 @@ import Reports from "./pages/Reports";
 import Billing from "./pages/Billing";
 import Users from "./pages/Users";
 import NotFound from "./pages/NotFound";
+import Onboarding from "./pages/Onboarding";
 
 const queryClient = new QueryClient();
 
@@ -38,6 +39,7 @@ const App: React.FC = () => {
                 <Route path="/reports" element={<Reports />} />
                 <Route path="/billing" element={<Billing />} />
                 <Route path="/users" element={<Users />} />
+                <Route path="/onboarding" element={<Onboarding />} />
                 <Route path="/calendar-settings" element={<CalendarSettings />} />
                 <Route path="/auth/calendar/callback" element={<CalendarAuthCallback />} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
