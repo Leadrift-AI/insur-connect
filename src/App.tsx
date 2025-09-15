@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { AuthProvider } from "@/hooks/useAuth";
 import { ErrorBoundary } from "@/components/ui/error-boundary";
+import SentryScope from "@/components/observability/SentryScope";
 import Index from "./pages/Index";
 import Auth from "./pages/Auth";
 import Dashboard from "./pages/Dashboard";
@@ -27,6 +28,7 @@ const App: React.FC = () => {
         <BrowserRouter>
           <TooltipProvider>
             <AuthProvider>
+              <SentryScope />
               <Toaster />
               <Sonner />
               <Routes>
@@ -40,6 +42,7 @@ const App: React.FC = () => {
                 <Route path="/users" element={<Users />} />
                 <Route path="/calendar-settings" element={<CalendarSettings />} />
                 <Route path="/auth/calendar/callback" element={<CalendarAuthCallback />} />
+                <Route path="/debug-sentry" element={<React.Suspense fallback={null}><DebugSentryLazy /></React.Suspense>} />
                 {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
                 <Route path="*" element={<NotFound />} />
               </Routes>
@@ -52,3 +55,5 @@ const App: React.FC = () => {
 };
 
 export default App;
+
+const DebugSentryLazy = React.lazy(() => import("./pages/DebugSentry"));
