@@ -36,7 +36,7 @@ export default defineConfig(async ({ mode }) => {
   }
 
   return {
-    server: { host: "::", port: 8080 },
+    server: { host: "0.0.0.0", port: 8080 },
     plugins,
     build: { sourcemap: isProd },
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
