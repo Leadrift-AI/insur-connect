@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useMemo, useRef, useState } from 'react';
 import type { JSX, ReactNode } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { Button } from '@/components/ui/button';
@@ -12,6 +12,8 @@ import { useOnboardingProgress, OnboardingStepKey } from '@/hooks/useOnboardingP
 import { Calendar, CheckCircle2, Upload, Users, CreditCard, Building2 } from 'lucide-react';
 import { useToast } from '@/hooks/use-toast';
 import { calendarService } from '@/services/calendar';
+import { supabase } from '@/integrations/supabase/client';
+import { useAgency } from '@/hooks/useAgency';
 
 type Step = {
 	key: OnboardingStepKey;
@@ -45,63 +47,76 @@ const Onboarding = () => {
 	const { toast } = useToast();
 	const { progress, setCurrentStepIndex, markStep } = useOnboardingProgress();
 
+  // Local state for step inputs (kept at component level to respect Hooks rules)
+  const [agencyName, setAgencyName] = useState<string>(
+    ((progress.steps.agencyProfile.data as any)?.name as string) || ''
+  );
+  const [inviteEmails, setInviteEmails] = useState<string>(
+    ((progress.steps.inviteAgents.data as any)?.emails as string) || ''
+  );
+
+  // Import step state
+  const { agencyId } = useAgency();
+  const [rowsText, setRowsText] = useState<string>('');
+  const [jobId, setJobId] = useState<string | null>(null);
+  const [jobStatus, setJobStatus] = useState<string | null>(null);
+  const [totalRows, setTotalRows] = useState<number>(0);
+  const [successRows, setSuccessRows] = useState<number>(0);
+  const [errorRows, setErrorRows] = useState<number>(0);
+  const [isImporting, setIsImporting] = useState<boolean>(false);
+  const pollRef = useRef<number | null>(null);
+
 	const steps: Step[] = useMemo(() => [
 		{
 			key: 'agencyProfile',
 			title: 'Agency Profile',
 			description: 'Create your agency workspace',
 			icon: <Building2 className="w-4 h-4" />,
-			render: () => {
-				const [name, setName] = useState<string>(((progress.steps.agencyProfile.data as any)?.name as string) || '');
-				return (
-					<div className="space-y-4">
-						<div>
-							<Label htmlFor="agencyName">Agency Name</Label>
-							<Input id="agencyName" value={name} onChange={(e) => setName(e.target.value)} placeholder="Enter your agency name" />
-						</div>
-						<div className="flex gap-2">
-							<Button
-								onClick={() => {
-									if (!name.trim()) { return; }
-									markStep('agencyProfile', 'completed', { name: name.trim() });
-									setCurrentStepIndex(1);
-									toast({ title: 'Saved', description: 'Agency name saved (local only).' });
-								}}
-								disabled={!name.trim()}
-							>
-								Save and Continue
-							</Button>
-						</div>
+			render: () => (
+				<div className="space-y-4">
+					<div>
+						<Label htmlFor="agencyName">Agency Name</Label>
+						<Input id="agencyName" value={agencyName} onChange={(e) => setAgencyName(e.target.value)} placeholder="Enter your agency name" />
 					</div>
-				);
-			},
+					<div className="flex gap-2">
+						<Button
+							onClick={() => {
+								if (!agencyName.trim()) { return; }
+								markStep('agencyProfile', 'completed', { name: agencyName.trim() });
+								setCurrentStepIndex(1);
+								toast({ title: 'Saved', description: 'Agency name saved (local only).' });
+							}}
+							disabled={!agencyName.trim()}
+						>
+							Save and Continue
+						</Button>
+					</div>
+				</div>
+			),
 		},
 		{
 			key: 'inviteAgents',
 			title: 'Invite Agents',
 			description: 'Invite teammates to collaborate',
 			icon: <Users className="w-4 h-4" />,
-			render: () => {
-				const [emails, setEmails] = useState<string>(((progress.steps.inviteAgents.data as any)?.emails as string) || '');
-				return (
-					<div className="space-y-4">
-						<p className="text-sm text-muted-foreground">Add comma or newline separated emails. This is a stub; no emails will be sent.</p>
-						<div>
-							<Label htmlFor="emails">Emails</Label>
-							<Textarea id="emails" value={emails} onChange={(e) => setEmails(e.target.value)} placeholder={"jane@acme.com, john@acme.com\n..."} />
-						</div>
-						<Button
-							onClick={() => {
-								markStep('inviteAgents', 'completed', { emails });
-								toast({ title: 'Invites queued (stub)' });
-							}}
-							disabled={!emails.trim()}
-						>
-							Mark as Invited
-						</Button>
+			render: () => (
+				<div className="space-y-4">
+					<p className="text-sm text-muted-foreground">Add comma or newline separated emails. This is a stub; no emails will be sent.</p>
+					<div>
+						<Label htmlFor="emails">Emails</Label>
+						<Textarea id="emails" value={inviteEmails} onChange={(e) => setInviteEmails(e.target.value)} placeholder={"jane@acme.com, john@acme.com\n..."} />
 					</div>
-				);
-			},
+					<Button
+						onClick={() => {
+							markStep('inviteAgents', 'completed', { emails: inviteEmails });
+							toast({ title: 'Invites queued (stub)' });
+						}}
+						disabled={!inviteEmails.trim()}
+					>
+						Mark as Invited
+					</Button>
+				</div>
+			),
 		},
 		{
 			key: 'connectCalendar',
@@ -142,10 +157,100 @@ const Onboarding = () => {
 			icon: <Upload className="w-4 h-4" />,
 			render: () => (
 				<div className="space-y-4">
-					<p className="text-sm text-muted-foreground">Launch the CSV importer to add leads.</p>
-					<Button onClick={() => toast({ title: 'CSV Importer', description: 'This will launch the importer (stub).' })}>
-						Launch CSV Importer
-					</Button>
+					<p className="text-sm text-muted-foreground">Paste JSON array of rows. We will call the import function and poll progress.</p>
+					<Textarea
+						value={rowsText}
+						onChange={(e) => setRowsText(e.target.value)}
+						placeholder='[{"full_name":"Jane Doe","email":"jane@example.com","phone":"..."}]'
+						className="min-h-32"
+					/>
+					<div className="flex gap-2 items-center">
+						<Button
+							disabled={isImporting || !rowsText.trim()}
+							onClick={async () => {
+								if (!agencyId) { toast({ title: 'No agency', description: 'Please create agency first', variant: 'destructive' }); return; }
+								let parsed: any[] = [];
+								try {
+									const j = JSON.parse(rowsText);
+									parsed = Array.isArray(j) ? j : [];
+								} catch (err) {
+									toast({ title: 'Invalid JSON', description: 'Please paste a valid JSON array', variant: 'destructive' });
+									return;
+								}
+
+								if (parsed.length === 0) { toast({ title: 'No rows', description: 'Add at least one row', variant: 'destructive' }); return; }
+
+								setIsImporting(true);
+								setJobId(null);
+								setJobStatus('pending');
+								setTotalRows(parsed.length);
+								setSuccessRows(0);
+								setErrorRows(0);
+
+								// Create an import job
+								const { data: job, error: jobErr } = await supabase
+									.from('import_jobs')
+									.insert({ agency_id: agencyId, status: 'pending', total_rows: parsed.length })
+									.select()
+									.single();
+								if (jobErr || !job) {
+									toast({ title: 'Failed to start job', description: jobErr?.message || 'Unknown error', variant: 'destructive' });
+									setIsImporting(false);
+									return;
+								}
+								setJobId(job.id);
+
+								// Invoke the edge function
+								try {
+									const { data, error } = await supabase.functions.invoke('import-csv', {
+										body: { import_job_id: job.id, rows: parsed }
+									});
+									if (error) throw error;
+									// Optional: use returned data
+								} catch (fnErr: any) {
+									toast({ title: 'Import failed to start', description: fnErr.message || 'Edge function error', variant: 'destructive' });
+									setIsImporting(false);
+									return;
+								}
+
+								// Start polling job progress
+								if (pollRef.current) { window.clearInterval(pollRef.current); }
+								pollRef.current = window.setInterval(async () => {
+									const { data: latest } = await supabase
+										.from('import_jobs')
+										.select('*')
+										.eq('id', job.id)
+										.single();
+									if (latest) {
+										setJobStatus(latest.status || null);
+										setSuccessRows(latest.success_rows || 0);
+										setErrorRows(latest.error_rows || 0);
+										setTotalRows(latest.total_rows || parsed.length);
+										if (latest.finished_at || latest.status === 'completed' || latest.status === 'failed') {
+											if (pollRef.current) { window.clearInterval(pollRef.current); pollRef.current = null; }
+											setIsImporting(false);
+										}
+									}
+								}, 1500);
+							}}
+						>
+							Start Import
+						</Button>
+						{isImporting && <span className="text-sm text-muted-foreground">Importing...</span>}
+					</div>
+
+					{(jobId) && (
+						<div className="space-y-2">
+							<div className="flex items-center justify-between">
+								<span className="text-sm">Job: {jobId}</span>
+								<span className="text-sm">Status: {jobStatus || 'pending'}</span>
+							</div>
+							<Progress value={totalRows ? Math.round(((successRows + errorRows) / totalRows) * 100) : 0} />
+							<div className="text-xs text-muted-foreground">
+								{successRows} succeeded • {errorRows} failed • {totalRows} total
+							</div>
+						</div>
+					)}
 				</div>
 			),
 		},
