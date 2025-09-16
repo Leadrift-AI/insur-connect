@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import React, { useState, useEffect } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -53,6 +53,7 @@ export const UserManagement = () => {
   const [inviteEmail, setInviteEmail] = useState('');
   const [inviteRole, setInviteRole] = useState<UserRole>('agent');
   const [submitting, setSubmitting] = useState(false);
+  const [inviteCap, setInviteCap] = useState<{allowed: boolean, used: number, cap: number} | null>(null);
   
   const { toast } = useToast();
   const { agencyId, canManageUsers } = useUserRole();
@@ -70,6 +71,7 @@ export const UserManagement = () => {
     if (agencyId && canManageUsers) {
       fetchTeamMembers();
       fetchPendingInvitations();
+      refreshInviteCap();
     }
   }, [agencyId, canManageUsers]);
 
@@ -131,7 +133,7 @@ export const UserManagement = () => {
   const handleRefresh = async () => {
     setRefreshing(true);
     try {
-      await Promise.all([fetchTeamMembers(), fetchPendingInvitations()]);
+      await Promise.all([fetchTeamMembers(), fetchPendingInvitations(), refreshInviteCap()]);
       toast({
         title: "Data refreshed",
         description: "Team member data has been updated",
@@ -144,6 +146,19 @@ export const UserManagement = () => {
       });
     } finally {
       setRefreshing(false);
+    }
+  };
+
+  const refreshInviteCap = async () => {
+    if (!agencyId) return;
+    try {
+      const res = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL || ''}/functions/v1/invite-cap-check?agency_id=${agencyId}`, {
+        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
+      });
+      const json = await res.json();
+      setInviteCap(json);
+    } catch (e) {
+      console.error('Failed to fetch invite cap', e);
     }
   };
 
@@ -365,7 +380,7 @@ export const UserManagement = () => {
           
           <Dialog open={inviteDialogOpen} onOpenChange={setInviteDialogOpen}>
             <DialogTrigger asChild>
-              <Button>
+              <Button disabled={inviteCap ? !inviteCap.allowed : false}>
                 <Plus className="w-4 h-4 mr-2" />
                 Invite Member
               </Button>
@@ -399,9 +414,12 @@ export const UserManagement = () => {
                     </SelectContent>
                   </Select>
                 </div>
-                <Button onClick={sendInvitation} disabled={submitting} className="w-full">
+                <Button onClick={sendInvitation} disabled={submitting || (inviteCap ? !inviteCap.allowed : false)} className="w-full">
                   {submitting ? "Sending..." : "Send Invitation"}
                 </Button>
+                {inviteCap && !inviteCap.allowed && (
+                  <p className="text-sm text-red-600 text-center">Invite limit reached ({inviteCap.used}/{inviteCap.cap}).</p>
+                )}
               </div>
             </DialogContent>
           </Dialog>

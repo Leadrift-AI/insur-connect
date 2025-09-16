@@ -41,23 +41,8 @@ const CalendarSettings: React.FC = () => {
   };
 
   const handleConnectGoogle = () => {
-    const clientId = 'your-google-client-id'; // This would come from your environment
-    const redirectUri = `${window.location.origin}/auth/callback/google-calendar`;
-    const scope = 'https://www.googleapis.com/auth/calendar.events';
-    const responseType = 'code';
-    const accessType = 'offline';
-    const prompt = 'consent';
-
-    const authUrl = `https://accounts.google.com/o/oauth2/auth?` +
-      `client_id=${clientId}&` +
-      `redirect_uri=${encodeURIComponent(redirectUri)}&` +
-      `scope=${encodeURIComponent(scope)}&` +
-      `response_type=${responseType}&` +
-      `access_type=${accessType}&` +
-      `prompt=${prompt}`;
-
-    // Open in new window
-    const popup = window.open(authUrl, 'google-calendar-auth', 'width=500,height=600');
+    const fnUrl = `${(import.meta as any).env.VITE_SUPABASE_URL || ''}/functions/v1/google-calendar-oauth`;
+    const popup = window.open(fnUrl, 'google-calendar-auth', 'width=500,height=700');
     
     // Listen for message from popup
     const messageHandler = (event: MessageEvent) => {

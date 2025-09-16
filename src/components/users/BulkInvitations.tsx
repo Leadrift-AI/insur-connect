@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Textarea } from '@/components/ui/textarea';
@@ -30,6 +30,7 @@ export const BulkInvitations = ({ onInvitationsSent }: BulkInvitationsProps) => 
   
   const { toast } = useToast();
   const { agencyId } = useUserRole();
+  const [inviteCap, setInviteCap] = useState<{allowed: boolean, used: number, cap: number} | null>(null);
 
   const parseEmails = () => {
     const emails = emailList
@@ -49,6 +50,21 @@ export const BulkInvitations = ({ onInvitationsSent }: BulkInvitationsProps) => 
     setParsedEmails(parsed);
   };
 
+  const refreshInviteCap = async () => {
+    if (!agencyId) return;
+    try {
+      const res = await fetch(`${(import.meta as any).env.VITE_SUPABASE_URL || ''}/functions/v1/invite-cap-check?agency_id=${agencyId}`, {
+        headers: { Authorization: `Bearer ${(await supabase.auth.getSession()).data.session?.access_token}` }
+      });
+      const json = await res.json();
+      setInviteCap(json);
+    } catch {}
+  };
+
+  React.useEffect(() => {
+    refreshInviteCap();
+  }, [agencyId, dialogOpen]);
+
   const sendBulkInvitations = async () => {
     if (!agencyId) return;
 
@@ -64,6 +80,11 @@ export const BulkInvitations = ({ onInvitationsSent }: BulkInvitationsProps) => 
 
     setSubmitting(true);
     try {
+      await refreshInviteCap();
+      if (inviteCap && !inviteCap.allowed) {
+        toast({ title: 'Invite limit reached', description: `You have used ${inviteCap.used}/${inviteCap.cap} seats.`, variant: 'destructive' });
+        return;
+      }
       const currentUser = await supabase.auth.getUser();
       const invitations = validEmails.map(pe => ({
         agency_id: agencyId,
@@ -87,6 +108,7 @@ export const BulkInvitations = ({ onInvitationsSent }: BulkInvitationsProps) => 
       setEmailList('');
       setParsedEmails([]);
       onInvitationsSent();
+      refreshInviteCap();
     } catch (error: any) {
       toast({
         title: "Error",

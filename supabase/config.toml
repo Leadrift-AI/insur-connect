@@ -57,3 +57,12 @@ verify_jwt = true
 
 [functions.google-calendar-oauth]
 verify_jwt = false
+
+[functions.import-csv]
+verify_jwt = true
+
+[functions.health]
+verify_jwt = false
+
+[functions.invite-cap-check]
+verify_jwt = true

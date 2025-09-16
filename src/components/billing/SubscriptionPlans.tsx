@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import React, { useState } from 'react';
 import { supabase } from '@/integrations/supabase/client';
 import { useAuth } from '@/hooks/useAuth';
 import { useToast } from '@/hooks/use-toast';
@@ -105,7 +105,6 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
       if (error) throw error;
 
       if (data?.url) {
-        // Open Stripe checkout in new tab
         window.open(data.url, '_blank');
       }
     } catch (error) {
@@ -117,6 +116,28 @@ const SubscriptionPlans = ({ currentSubscription, onSubscribe }: SubscriptionPla
       });
     }
   };
+
+  // Reflect paid state by polling subscription
+  const [isPaid, setIsPaid] = React.useState(false);
+  React.useEffect(() => {
+    let interval: any;
+    const check = async () => {
+      const { data: profile } = await supabase
+        .from('profiles')
+        .select('agency_id')
+        .maybeSingle();
+      if (!profile?.agency_id) return;
+      const { data: sub } = await supabase
+        .from('agencies')
+        .select('plan, stripe_subscription_id')
+        .eq('id', profile.agency_id)
+        .single();
+      setIsPaid(!!sub?.stripe_subscription_id && sub?.plan !== 'free');
+    };
+    check();
+    interval = setInterval(check, 4000);
+    return () => clearInterval(interval);
+  }, []);
 
   const formatPrice = (price: number) => {
     return new Intl.NumberFormat('en-US', {

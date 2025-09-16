@@ -9,6 +9,7 @@ import CreateLeadDialog from '@/components/dashboard/CreateLeadDialog';
 import { Button } from '@/components/ui/button';
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
 import { Plus, Kanban, Table } from 'lucide-react';
+import { CsvImportDialog } from '@/components/leads/CsvImportDialog';
 import { Loader2 } from 'lucide-react';
 
 const LeadsPipeline = () => {
@@ -45,10 +46,13 @@ const LeadsPipeline = () => {
           </div>
           
           {canManageLeads && (
-            <Button onClick={() => setCreateDialogOpen(true)}>
-              <Plus className="mr-2 h-4 w-4" />
-              Add Lead
-            </Button>
+            <div className="flex items-center gap-2">
+              <CsvImportDialog />
+              <Button onClick={() => setCreateDialogOpen(true)}>
+                <Plus className="mr-2 h-4 w-4" />
+                Add Lead
+              </Button>
+            </div>
           )}
         </div>
 

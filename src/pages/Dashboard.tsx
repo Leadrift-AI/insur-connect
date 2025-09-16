@@ -6,6 +6,7 @@ import { useRealtimeKPIs } from '@/hooks/useRealtimeKPIs';
 import { supabase } from '@/integrations/supabase/client';
 import DashboardLayout from '@/components/layout/DashboardLayout';
 import DashboardStats from '@/components/dashboard/DashboardStats';
+import { HealthCard } from '@/components/health/HealthCard';
 import DashboardCharts from '@/components/dashboard/DashboardCharts';
 import LeadsTable from '@/components/dashboard/LeadsTable';
 import { ReadOnlyDashboard } from '@/components/dashboard/ReadOnlyDashboard';
@@ -120,7 +121,10 @@ const Dashboard = () => {
           </p>
         </div>
         
-        <DashboardStats kpis={kpiData || { newLeads: 0, appointments: 0, conversionRate: 0, policiesSold: 0, commissions: 0, averageDealSize: 0 }} />
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+          <DashboardStats kpis={kpiData || { newLeads: 0, appointments: 0, conversionRate: 0, policiesSold: 0, commissions: 0, averageDealSize: 0 }} />
+          <HealthCard />
+        </div>
         <DashboardCharts funnelData={funnelData} />
         <LeadsTable leads={leads} onRefresh={() => { fetchDashboardData(); refetchKPIs(); }} />
       </div>
