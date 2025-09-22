@@ -34,7 +34,10 @@ export default defineConfig(async ({ mode }) => {
   return {
     server: { host: "::", port: 8080 },
     plugins,
-    build: { sourcemap: true },
+    build: {
+      sourcemap: true,
+      chunkSizeWarningLimit: 2000
+    },
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   };
 });
