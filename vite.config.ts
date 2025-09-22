@@ -36,7 +36,7 @@ export default defineConfig(async ({ mode }) => {
     plugins,
     build: {
       sourcemap: true,
-      chunkSizeWarningLimit: 2000
+      chunkSizeWarningLimit: 2500
     },
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   };
