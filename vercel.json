@@ -2,7 +2,7 @@
   "version": 2,
   "framework": "vite",
   "functions": {
-    "api/**/*.{js,ts}": { "runtime": "@vercel/node@20.x" }
+    "api/**/*.{js,ts}": { "runtime": "@vercel/node@20.0.0" }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" }
