@@ -1,9 +1,9 @@
 {
+  "version": 2,
   "framework": "vite",
   "functions": {
-    "api/**/*.{js,ts}": {
-      "runtime": "@vercel/node@3.0.0"
-    }
+    "api/**/**/*.{js,ts}": { "runtime": "@vercel/node@3.0.0" },
+    "api/**/*.{js,ts}":    { "runtime": "@vercel/node@3.0.0" }
   },
   "routes": [
     { "src": "/api/(.*)", "dest": "/api/$1" }

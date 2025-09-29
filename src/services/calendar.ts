@@ -38,7 +38,12 @@ class CalendarService {
     // Get the client ID from environment (this should be a public key)
     const clientId = '264336951291-hcjcqagon99s6muce1hf12qnd513pqoc.apps.googleusercontent.com';
     
-    const redirectUri = `https://qjfsxniavmgckkgaifmf.supabase.co/functions/v1/calendar-oauth`;
+    const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+    if (!supabaseUrl) {
+      throw new Error('Missing VITE_SUPABASE_URL environment variable');
+    }
+    
+    const redirectUri = `${supabaseUrl}/functions/v1/calendar-oauth`;
     const scope = 'https://www.googleapis.com/auth/calendar';
     
     const authUrl = `https://accounts.google.com/o/oauth2/v2/auth?` +
