@@ -43,9 +43,15 @@ const CalendarAuthCallback: React.FC = () => {
           throw new Error('No valid session found');
         }
 
+        // Get Supabase URL from environment
+        const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
+        if (!supabaseUrl) {
+          throw new Error('Missing VITE_SUPABASE_URL environment variable');
+        }
+
         // Call the OAuth edge function
         const response = await fetch(
-          `https://qjfsxniavmgckkgaifmf.supabase.co/functions/v1/calendar-oauth?code=${code}`,
+          `${supabaseUrl}/functions/v1/calendar-oauth?code=${code}`,
           {
             method: 'GET',
             headers: {

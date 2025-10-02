@@ -4,40 +4,40 @@ import path from "path";
 import { componentTagger } from "lovable-tagger";
 
 export default defineConfig(async ({ mode }) => {
-  const isProd = mode === "production";
-  const hasSentry =
-    !!process.env.SENTRY_AUTH_TOKEN &&
-    !!process.env.SENTRY_ORG &&
-    !!process.env.SENTRY_PROJECT;
-
   const plugins: any[] = [
     react(),
     mode === "development" && componentTagger(),
   ].filter(Boolean);
 
-  if (isProd && hasSentry) {
+  if (!process.env.DISABLE_SENTRY_PLUGIN) {
     try {
-      const { sentryVitePlugin } = await import("@sentry/vite-plugin");
-      plugins.push(
-        sentryVitePlugin({
-          org: process.env.SENTRY_ORG,
-          project: process.env.SENTRY_PROJECT,
+      const mod = await import("@sentry/vite-plugin").catch(() => null);
+      const sentryVitePlugin = (mod as any)?.sentryVitePlugin;
+      if (sentryVitePlugin && process.env.SENTRY_ORG && process.env.SENTRY_PROJECT) {
+        plugins.push(sentryVitePlugin({
+          org: process.env.SENTRY_ORG!,
+          project: process.env.SENTRY_PROJECT!,
           authToken: process.env.SENTRY_AUTH_TOKEN,
           release: { name: process.env.VERCEL_GIT_COMMIT_SHA || process.env.COMMIT_SHA },
           telemetry: false,
-        })
-      );
-    } catch (err) {
-      console.warn("[vite] Sentry plugin unavailable; skipping sourcemap upload");
+        }));
+      } else {
+        console.warn("[vite] Sentry plugin skipped (missing package or env).");
+      }
+    } catch {
+      console.warn("[vite] Sentry plugin not available, continuing without it.");
     }
-  } else if (isProd && !hasSentry) {
-    console.warn("[vite] Sentry env missing; skipping sourcemap upload");
+  } else {
+    console.warn("[vite] Sentry plugin disabled via DISABLE_SENTRY_PLUGIN=1");
   }
 
   return {
     server: { host: "::", port: 8080 },
     plugins,
-    build: { sourcemap: isProd },
+    build: {
+      sourcemap: true,
+      chunkSizeWarningLimit: 2500
+    },
     resolve: { alias: { "@": path.resolve(__dirname, "./src") } },
   };
 });
